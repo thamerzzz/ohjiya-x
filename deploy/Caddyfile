@@ -1,0 +1,14 @@
+# Public entry point for Ohjiya X. Caddy gets and renews the HTTPS certificate
+# for the domain by itself; the app is never exposed directly.
+{$SITE_DOMAIN:x.ohjiya.sa} {
+	encode zstd gzip
+
+	# Temporary access gate while the site is private. Set BASIC_AUTH_USER and
+	# BASIC_AUTH_HASH in deploy/.env (see deploy/README.md), or delete this
+	# block when you open the site to the public.
+	basic_auth {
+		{$BASIC_AUTH_USER} {$BASIC_AUTH_HASH}
+	}
+
+	reverse_proxy app:4173
+}
