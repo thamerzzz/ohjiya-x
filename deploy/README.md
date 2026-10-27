@@ -18,6 +18,6 @@ public site. The globe, flights, ships, satellites and keyless layers do.
 
 ## Turning on accounts (after the WordPress plugin is live and tested on staging)
 1. In `deploy/.env` set the four secrets (the first three must match `wp-config.php` on ohjiya.sa) and `OHJIYA_AUTH=on`.
-2. Remove the `basic_auth` block from `deploy/Caddyfile` so the free version is public.
+2. The Caddyfile no longer has the password gate, so the free version is public as soon as it is deployed.
 3. Redeploy. If a secret is missing the app refuses to start, by design: it never falls back to open access.
 4. Check `https://x.ohjiya.sa/api/me` returns `{"signedIn":false,...}`, then sign in from the toolbar.

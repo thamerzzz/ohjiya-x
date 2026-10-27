@@ -3,12 +3,8 @@
 {$SITE_DOMAIN:x.ohjiya.sa} {
 	encode zstd gzip
 
-	# Temporary access gate while the site is private. Set BASIC_AUTH_USER and
-	# BASIC_AUTH_HASH in deploy/.env (see deploy/README.md), or delete this
-	# block when you open the site to the public.
-	basic_auth {
-		{$BASIC_AUTH_USER} {$BASIC_AUTH_HASH}
-	}
+	# Public. Access control is the app's own sign-in (OHJIYA_AUTH=on), which gates voice,
+	# chat and the paid data routes by plan. The earlier basic_auth password gate was removed.
 
 	reverse_proxy app:4173
 }
