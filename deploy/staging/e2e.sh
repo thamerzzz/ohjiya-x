@@ -22,10 +22,12 @@ check "Voice needs sign-in (401)" "$(curl -s -o /dev/null -w '%{http_code}' "$AP
 check "Provider Settings is hidden (404)" "$(curl -s -o /dev/null -w '%{http_code}' "$APP/api/setup/status")" 404
 
 echo "== 2. Buy a plan"
-USER_ID=$(wp user get e2e-buyer --field=ID 2>/dev/null || wp user create e2e-buyer e2e-buyer@example.test --role=customer --user_pass="$(openssl rand -hex 8)" --porcelain)
+# A fresh user every run, so earlier runs cannot leave plans behind that change the result.
+E2E_USER="e2e-$(date +%s)"
+USER_ID=$(wp user create "$E2E_USER" "$E2E_USER@example.test" --role=customer --user_pass="$(openssl rand -hex 8)" --porcelain)
 PRODUCT=$(wp post list --post_type=product --meta_key=_oxe_edition --meta_value=retail --field=ID | head -n1)
 ORDER=$(wp wc shop_order create --user=admin --customer_id="$USER_ID" --status=processing --payment_method=bacs \
-  --line_items="[{\"product_id\":$PRODUCT,\"quantity\":1}]" --billing='{"company":"E2E Test Co","email":"e2e-buyer@example.test"}' --porcelain)
+  --line_items="[{\"product_id\":$PRODUCT,\"quantity\":1}]" --billing='{"company":"E2E Test Co","email":"$E2E_USER@example.test"}' --porcelain)
 echo "  order #$ORDER for user #$USER_ID"
 R=$(entitlement "$USER_ID"); check "Entitlement: active" "$R" '"status":"active"'; check "Entitlement: retail edition" "$R" '"edition":"retail"'
 check "Entitlement: voice feature" "$R" '"voice"'; check "Entitlement: company name" "$R" 'E2E Test Co'
@@ -58,15 +60,15 @@ wp wc shop_order update "$ORDER" --user=admin --status=refunded >/dev/null
 check "Entitlement: none after refund" "$(entitlement "$USER_ID")" '"status":"none"'
 
 echo "== 7. Renewal reminders (one email, not three)"
-mail_api messages -X DELETE >/dev/null
 ORDER2=$(wp wc shop_order create --user=admin --customer_id="$USER_ID" --status=completed --payment_method=bacs \
   --line_items="[{\"product_id\":$PRODUCT,\"quantity\":1}]" --porcelain)
 wp eval 'global $wpdb; $t=$wpdb->prefix."oxe_plan"; $wpdb->query("UPDATE $t SET starts=DATE_SUB(NOW(), INTERVAL 355 DAY), expires=DATE_ADD(NOW(), INTERVAL 10 DAY), notified=\"\" WHERE status=\"active\"");' >/dev/null
+mail_api messages -X DELETE >/dev/null   # drop WooCommerce's order emails; keep only reminders
 wp cron event run oxe_daily_check >/dev/null
 wp cron event run oxe_daily_check >/dev/null
 MAIL=$(mail_api messages)
 check "One reminder, 'ends in 14 days'" "$MAIL" 'ends in 14 days'
-COUNT=$(echo "$MAIL" | grep -o '"Subject"' | wc -l | tr -d ' ')
+COUNT=$(echo "$MAIL" | grep -o 'plan ends in' | wc -l | tr -d ' ')
 [ "$COUNT" = "1" ] && ok "Exactly one email after running the check twice" || bad "Exactly one email after running the check twice" "got $COUNT"
 wp eval 'global $wpdb; $t=$wpdb->prefix."oxe_plan"; $wpdb->query("UPDATE $t SET starts=DATE_SUB(NOW(), INTERVAL 400 DAY), expires=DATE_SUB(NOW(), INTERVAL 1 DAY) WHERE status=\"active\"");' >/dev/null
 check "Expired plan: grace, no features" "$(entitlement "$USER_ID")" '"status":"grace"'
