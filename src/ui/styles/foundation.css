@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════
-   GOD'S EYE VIEW — Dark Sci-Fi UI
+   OHJIYA X — Dark Sci-Fi UI
    Apple meets Blade Runner
    ═══════════════════════════════════════════════ */
 
@@ -9,6 +9,7 @@
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-border-hover: rgba(255, 255, 255, 0.15);
   --accent: #00d4ff;
+  --brand-red: #ff3b4a;
   --accent-dim: rgba(0, 212, 255, 0.15);
   --accent-glow: rgba(0, 212, 255, 0.4);
   --text-primary: #e8eaed;
@@ -600,7 +601,7 @@ body.cockpit-mode #cockpit-cloud-effects.active {
 
 #title-bar .title-accent,
 .loader-content .title-accent {
-  color: var(--accent);
+  color: var(--brand-red);
   font-weight: 300;
 }
 

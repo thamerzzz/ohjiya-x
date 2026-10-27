@@ -1,5 +1,29 @@
 <div align="center">
 
+<img src="public/logo.svg" alt="Ohjiya X" width="160">
+
+# Ohjiya X
+
+### A live, voice-controlled intelligence globe, by Ohjiya — live at [x.ohjiya.sa](https://x.ohjiya.sa)
+
+</div>
+
+Ohjiya X is a customized edition of the open-source **God's Eye View** project by
+Bilawal Sidhu ([bilawalsidhu/gods-eye-view](https://github.com/bilawalsidhu/gods-eye-view),
+MIT licensed). The original copyright and license are kept in [LICENSE](LICENSE). Data
+sources and their terms are listed in [DATA_SOURCES.md](DATA_SOURCES.md); some are
+non-commercial or restricted, so check them before any paid or public deployment.
+
+Deploying to a server: see [deploy/README.md](deploy/README.md).
+
+---
+
+## Upstream documentation (God's Eye View)
+
+The rest of this file is the original project's documentation and still describes how the app works.
+
+<div align="center">
+
 # 🌐 God's Eye View
 
 [![CI](https://github.com/bilawalsidhu/gods-eye-view/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/bilawalsidhu/gods-eye-view/actions/workflows/ci.yml) [![Reached #1 on GitHub Trending](https://img.shields.io/badge/%231_GitHub_Trending-thank_you!-F0A63C?style=flat-square&logo=github)](https://x.com/bilawalsidhu/status/2093798887815348521)
