@@ -1,6 +1,7 @@
 import { createStandaloneApplication } from './standalone/application.js';
 import { describeError } from './standalone/errors.js';
 import { t } from './i18n/index.js';
+import { startAccount } from './ohjiya/account.js';
 
 const application = createStandaloneApplication({
   googleApiKey: import.meta.env.GOOGLE_MAPS_API_KEY,
@@ -8,8 +9,10 @@ const application = createStandaloneApplication({
   allowQaRegistration: import.meta.env.DEV,
 });
 
+startAccount();
+
 application.start().catch((error) => {
-  console.error("Ohjiya X initialization failed:", error);
+  console.error('Ohjiya X initialization failed:', error);
   const loaderStatus = document.querySelector('#loading-screen .loader-status');
   loaderStatus.textContent = t('Error: {message}', {
     message: describeError(error),

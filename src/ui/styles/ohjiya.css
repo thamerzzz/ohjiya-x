@@ -1,0 +1,85 @@
+/* Ohjiya X account chip, top of the map, at the inline end (right in English, left in Arabic). */
+#ox-account {
+  position: fixed;
+  top: 32px;
+  inset-inline-end: 16px;
+  z-index: 110;
+  font-family: inherit;
+}
+
+#ox-account .ox-chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 220px;
+  padding: 8px 14px;
+  overflow: hidden;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  color: var(--text-primary);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  cursor: pointer;
+}
+
+#ox-account .ox-chip:hover,
+#ox-account .ox-chip:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+#ox-account .ox-menu {
+  position: absolute;
+  inset-inline-end: 0;
+  top: calc(100% + 8px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 220px;
+  padding: 12px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-size: 12px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+#ox-account .ox-menu[hidden] {
+  display: none;
+}
+
+#ox-account .ox-menu-note {
+  color: var(--brand-red);
+}
+
+#ox-account .ox-menu a,
+#ox-account .ox-menu button {
+  padding: 6px 0;
+  background: none;
+  border: 0;
+  color: var(--accent);
+  font: inherit;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* Voice is part of the paid plans: hide its controls when the plan has none.
+   The server refuses the voice routes either way; this only avoids a dead button. */
+:root[data-ox-voice='off'] #gev-voice-control {
+  display: none !important;
+}
+
+@media (max-width: 640px) {
+  #ox-account {
+    top: 12px;
+    inset-inline-end: 8px;
+  }
+}

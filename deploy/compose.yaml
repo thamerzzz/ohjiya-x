@@ -2,7 +2,9 @@
 # Run from the repo root:  docker compose -f deploy/compose.yaml --env-file deploy/.env up -d --build
 services:
   app:
-    build: ..
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
     restart: unless-stopped
     environment:
       # The app rejects any Host header not listed here (DNS-rebinding guard).
@@ -10,6 +12,9 @@ services:
       # Provider Settings refuses proxied requests on purpose: no one can open
       # the key panel from the internet. Keys come from deploy/.env below.
       - GEV_KEY_SETUP_TRUSTED_PEERS=none
+      # Ohjiya X accounts (secrets come from deploy/.env).
+      - OHJIYA_AUTH=${OHJIYA_AUTH:-off}
+      - OHJIYA_APP_URL=https://${SITE_DOMAIN:-x.ohjiya.sa}
     env_file:
       - .env
     volumes:

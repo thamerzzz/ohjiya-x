@@ -7,6 +7,8 @@ import { localMcpPlugin } from '../mcp/plugin.js';
 import { apiNotFoundPlugin } from './api-not-found.js';
 import { standaloneVoiceTools } from './voiceTools.js';
 import { unwatchedRuntimeDirsPlugin } from './unwatched-cache.js';
+import { loadOhjiyaConfig } from '../ohjiya/config.js';
+import { ohjiyaAuthPlugin } from '../ohjiya/plugin.js';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 
@@ -17,8 +19,11 @@ export default defineConfig(({ command, mode }) => {
     if (process.env[key] === undefined) process.env[key] = value;
   }
   const tools = standaloneVoiceTools();
+  // Ohjiya X accounts: only when OHJIYA_AUTH is on; throws on a half-configuration.
+  const ohjiya = loadOhjiyaConfig();
   return createBrowserViteConfig({
     plugins: [
+      ...(ohjiya ? [ohjiyaAuthPlugin(ohjiya)] : []),
       ...localProviderPlugins({ realtime: { tools }, gemini: { tools } }),
       localMcpPlugin(),
       apiNotFoundPlugin(),
