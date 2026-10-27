@@ -62,7 +62,11 @@ check "Entitlement: none after refund" "$(entitlement "$USER_ID")" '"status":"no
 echo "== 7. Renewal reminders (one email, not three)"
 ORDER2=$(wp wc shop_order create --user=admin --customer_id="$USER_ID" --status=completed --payment_method=bacs \
   --line_items="[{\"product_id\":$PRODUCT,\"quantity\":1}]" --porcelain)
-wp eval 'global $wpdb; $t=$wpdb->prefix."oxe_plan"; $wpdb->query("UPDATE $t SET starts=DATE_SUB(NOW(), INTERVAL 355 DAY), expires=DATE_ADD(NOW(), INTERVAL 10 DAY), notified=\"\" WHERE status=\"active\"");' >/dev/null
+# Only this test's company: older runs' companies must not be touched or notified.
+set_dates() { # starts_days_ago expires_modifier (SQL), clears notified
+  wp eval 'global $wpdb; $t=$wpdb->prefix."oxe_plan"; $c=$wpdb->prefix."oxe_company"; $wpdb->query($wpdb->prepare("UPDATE $t SET starts=DATE_SUB(NOW(), INTERVAL '"$1"' DAY), expires='"$2"', notified=\"\" WHERE status=\"active\" AND company_id IN (SELECT id FROM $c WHERE owner_user_id=%d)", '"$USER_ID"'));' >/dev/null
+}
+set_dates 355 'DATE_ADD(NOW(), INTERVAL 10 DAY)'
 mail_api messages -X DELETE >/dev/null   # drop WooCommerce's order emails; keep only reminders
 wp cron event run oxe_daily_check >/dev/null
 wp cron event run oxe_daily_check >/dev/null
@@ -70,7 +74,7 @@ MAIL=$(mail_api messages)
 check "One reminder, 'ends in 14 days'" "$MAIL" 'ends in 14 days'
 COUNT=$(echo "$MAIL" | grep -o 'plan ends in' | wc -l | tr -d ' ')
 [ "$COUNT" = "1" ] && ok "Exactly one email after running the check twice" || bad "Exactly one email after running the check twice" "got $COUNT"
-wp eval 'global $wpdb; $t=$wpdb->prefix."oxe_plan"; $wpdb->query("UPDATE $t SET starts=DATE_SUB(NOW(), INTERVAL 400 DAY), expires=DATE_SUB(NOW(), INTERVAL 1 DAY) WHERE status=\"active\"");' >/dev/null
+set_dates 400 'DATE_SUB(NOW(), INTERVAL 1 DAY)'
 check "Expired plan: grace, no features" "$(entitlement "$USER_ID")" '"status":"grace"'
 
 echo
