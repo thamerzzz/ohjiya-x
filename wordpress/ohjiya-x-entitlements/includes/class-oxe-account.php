@@ -11,7 +11,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class OXE_Account {
 
-	const ENDPOINT = 'ohjiya-x';
+	// Not 'ohjiya-x': that address belongs to the plugin's own page (see ensure_page()).
+	const ENDPOINT = 'ohjiya-x-plan';
 
 	public static function init() {
 		add_action( 'init', array( __CLASS__, 'add_endpoint' ) );
@@ -69,6 +70,10 @@ class OXE_Account {
 
 	public static function add_endpoint() {
 		add_rewrite_endpoint( self::ENDPOINT, EP_ROOT | EP_PAGES );
+		if ( get_option( 'oxe_needs_flush' ) ) {
+			flush_rewrite_rules( false );
+			delete_option( 'oxe_needs_flush' );
+		}
 	}
 
 	public static function query_vars( $vars ) {

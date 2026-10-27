@@ -25,7 +25,7 @@ copy of ohjiya.sa before production.**
 - Refund, cancel or failed -> revokes only that order's periods.
 - Renewal adds a year starting when the current one ends. 14-day grace after expiry (no features), then free.
 - Daily check emails the owner at 30 / 14 / 3 days and on expiry (Arabic or English by user locale), once per milestone.
-- My Account > Ohjiya X: plan, team, email invitations (claimed when that email signs in or registers).
+- The /ohjiya-x/ page (shortcode `[ohjiya_x_account]`, created on activation): plan, team, email invitations (claimed when that email signs in or registers).
 - WooCommerce > Ohjiya X plans: add time or revoke a period.
 
 ## Interfaces the app uses

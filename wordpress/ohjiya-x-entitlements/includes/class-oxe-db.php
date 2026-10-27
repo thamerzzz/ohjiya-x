@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class OXE_DB {
 
-	const SCHEMA_VERSION = '1';
+	const SCHEMA_VERSION = '2';
 
 	public static function table( $name ) {
 		global $wpdb;
@@ -82,5 +82,6 @@ class OXE_DB {
 			) {$charset};"
 		);
 		update_option( 'oxe_schema_version', self::SCHEMA_VERSION );
+		update_option( 'oxe_needs_flush', 1, false ); // Rewrite rules changed: flush once on the next request.
 	}
 }

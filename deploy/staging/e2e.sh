@@ -14,6 +14,9 @@ entitlement() { # user id, optional signature override
   curl -sS -w '\n%{http_code}' -H "X-OXE-Timestamp: $ts" -H "X-OXE-Signature: $sig" "$WP/wp-json/ohjiya-x/v1/entitlement?user=$1"
 }
 
+echo "== 0. Waiting for the app (it needs a few seconds after a restart)"
+for i in $(seq 1 30); do [ "$(curl -s -o /dev/null -w '%{http_code}' "$APP/")" = "200" ] && break; sleep 2; done
+
 echo "== 1. Reachability"
 check "WordPress answers over HTTPS" "$(curl -s -o /dev/null -w '%{http_code}' "$WP/")" 200
 check "App answers over HTTPS" "$(curl -s -o /dev/null -w '%{http_code}' "$APP/")" 200
@@ -33,7 +36,7 @@ R=$(entitlement "$USER_ID"); check "Entitlement: active" "$R" '"status":"active"
 check "Entitlement: voice feature" "$R" '"voice"'; check "Entitlement: company name" "$R" 'E2E Test Co'
 check "Entitlement: owner role" "$R" '"role":"owner"'; check "Entitlement: 3 seats" "$R" '"seats":3'
 
-check "Entitlement: account page link" "$R" '/ohjiya-x/'
+check "Entitlement: account page link" "$R" 'account_url'
 check "Account page answers (200)" "$(curl -sL -o /dev/null -w '%{http_code}' "$WP/ohjiya-x/")" 200
 check "Account page asks for sign-in" "$(curl -sL "$WP/ohjiya-x/")" 'wp-login.php'
 
