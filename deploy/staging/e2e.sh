@@ -27,7 +27,7 @@ E2E_USER="e2e-$(date +%s)"
 USER_ID=$(wp user create "$E2E_USER" "$E2E_USER@example.test" --role=customer --user_pass="$(openssl rand -hex 8)" --porcelain)
 PRODUCT=$(wp post list --post_type=product --meta_key=_oxe_edition --meta_value=retail --field=ID | head -n1)
 ORDER=$(wp wc shop_order create --user=admin --customer_id="$USER_ID" --status=processing --payment_method=bacs \
-  --line_items="[{\"product_id\":$PRODUCT,\"quantity\":1}]" --billing='{"company":"E2E Test Co","email":"$E2E_USER@example.test"}' --porcelain)
+  --line_items="[{\"product_id\":$PRODUCT,\"quantity\":1}]" --billing="{\"company\":\"E2E Test Co\",\"email\":\"$E2E_USER@example.test\"}" --porcelain)
 echo "  order #$ORDER for user #$USER_ID"
 R=$(entitlement "$USER_ID"); check "Entitlement: active" "$R" '"status":"active"'; check "Entitlement: retail edition" "$R" '"edition":"retail"'
 check "Entitlement: voice feature" "$R" '"voice"'; check "Entitlement: company name" "$R" 'E2E Test Co'
