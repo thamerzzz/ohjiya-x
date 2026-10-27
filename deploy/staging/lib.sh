@@ -5,5 +5,5 @@ cd "$STAGING_DIR/../.."
 set -a; . "$STAGING_DIR/.env"; set +a
 
 compose() { docker compose -f deploy/staging/compose.yaml --env-file deploy/staging/.env "$@"; }
-wp() { compose run --rm -T wpcli wp --path=/var/www/html "$@"; }
+wp() { compose run --rm -T --user 33:33 wpcli wp --path=/var/www/html "$@"; }
 mail_api() { curl -fsS "http://127.0.0.1:8025/api/v1/$1" "${@:2}"; }
