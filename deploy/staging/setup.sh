@@ -14,6 +14,10 @@ if ! wp core is-installed 2>/dev/null; then
     --admin_email=staging@ohjiya.sa --skip-email
 fi
 
+# Current WooCommerce needs WordPress 7.0+; make sure core is current.
+wp core update --force || true
+wp core update-db || true
+
 wp rewrite structure '/%postname%/' --hard
 wp option update users_can_register 1
 wp plugin install woocommerce --activate

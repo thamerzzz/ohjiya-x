@@ -19,7 +19,7 @@ services:
       - db-data:/var/lib/mysql
 
   wp-test:
-    image: wordpress:6-php8.2-apache
+    image: wordpress:php8.2-apache
     restart: unless-stopped
     depends_on:
       - db
