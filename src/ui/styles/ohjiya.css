@@ -1,5 +1,10 @@
 /* Ohjiya X account chip, top of the map, at the inline end (right in English, left in Arabic). */
 #ox-account {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  max-width: calc(100vw - 24px);
   position: fixed;
   top: 32px;
   inset-inline-end: 16px;
@@ -69,6 +74,67 @@
   text-align: start;
   text-decoration: none;
   cursor: pointer;
+}
+
+#ox-account .ox-lens {
+  border-color: var(--brand-red);
+  color: var(--text-primary);
+}
+
+#ox-account .ox-info {
+  justify-content: center;
+  padding: 8px 12px;
+  font-style: italic;
+}
+
+#ox-account .ox-tools,
+#ox-account .ox-catalog {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#ox-account .ox-catalog-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+#ox-account .ox-catalog-item span,
+#ox-account .ox-tagline {
+  color: var(--text-secondary);
+}
+
+#ox-account .ox-tool {
+  display: flex;
+  gap: 8px;
+}
+
+#ox-account .ox-tool-state {
+  flex: none;
+  min-width: 44px;
+  color: var(--accent);
+}
+
+#ox-account .ox-tool-soon .ox-tool-state {
+  color: var(--text-secondary);
+}
+
+/* Panels open under the buttons, wide enough for the descriptions, and solid
+   enough to read over the HUD text behind them. */
+#ox-account .ox-menu {
+  inset-inline-end: 0;
+  width: 300px;
+  background: rgba(10, 10, 15, 0.96);
+}
+
+#ox-account .ox-catalog-item span,
+#ox-account .ox-tagline,
+#ox-account .ox-tool-soon {
+  color: #aab2bd;
 }
 
 /* Voice is part of the paid plans: hide its controls when the plan has none.

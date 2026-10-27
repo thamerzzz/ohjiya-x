@@ -130,6 +130,8 @@ test('end to end: sign-in flow, session, gating, replay and webhook', async () =
     // Anonymous: /api/me is free, open routes pass, gated routes want sign-in.
     const anon = await (await get(`${base}/api/me`)).json();
     assert.equal(anon.signedIn, false);
+    assert.equal(anon.edition, null);
+    assert.equal(anon.editions.length, 3);
     assert.equal((await get(`${base}/api/launches`)).status, 200);
     assert.equal((await get(`${base}/api/realtime/token`)).status, 401);
     assert.equal((await get(`${base}/api/setup/status`)).status, 404);
@@ -165,6 +167,9 @@ test('end to end: sign-in flow, session, gating, replay and webhook', async () =
     assert.equal(me.signedIn, true);
     assert.equal(me.plan.edition, 'real_estate');
     assert.equal(me.accountUrl, 'https://ohjiya.sa/ohjiya-x/');
+    assert.equal(me.edition.id, 'real_estate');
+    assert.match(me.edition.lens, /^\/#v=2/);
+    assert.equal(me.editions.length, 3);
     assert.deepEqual(me.features, ['voice', 'chat']);
     const voice = await (await get(`${base}/api/realtime/token`, { cookie: session, 'x-forwarded-for': '9.9.9.9' })).json();
     assert.equal(voice.reached, '/api/realtime/token');

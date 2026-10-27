@@ -18,6 +18,13 @@ const TEXT = {
     until: 'until',
     expired: 'ended - renew to restore access',
     grace: 'ended - renew soon',
+    editions: 'Editions',
+    editionsIntro: 'Sector editions, one plan each:',
+    seePlans: 'See plans',
+    lens: 'lens',
+    ready: 'ready',
+    soon: 'soon',
+    yourEdition: 'Your edition',
   },
   ar: {
     signIn: 'تسجيل الدخول / إنشاء حساب',
@@ -29,6 +36,13 @@ const TEXT = {
     until: 'حتى',
     expired: 'انتهى - جدّد لاستعادة الوصول',
     grace: 'انتهى - جدّد قريبًا',
+    editions: 'الإصدارات',
+    editionsIntro: 'إصدارات قطاعية، لكل منها اشتراك:',
+    seePlans: 'عرض الاشتراكات',
+    lens: 'عدسة',
+    ready: 'جاهز',
+    soon: 'قريبًا',
+    yourEdition: 'إصدارك',
   },
 };
 
@@ -77,6 +91,66 @@ function el(tag, attrs = {}, children = []) {
   }
   for (const child of children) node.append(child);
   return node;
+}
+
+/** Open an edition's starter lens: same page, new share link. A hash-only change would not reload the globe. */
+function openLens(lens) {
+  location.assign(lens);
+  location.reload();
+}
+
+/** A panel that opens and closes from a button; closing others keeps one panel open at a time. */
+function togglePanel(button, panel) {
+  button.addEventListener('click', () => {
+    const open = panel.hasAttribute('hidden');
+    for (const other of document.querySelectorAll('#ox-account .ox-menu'))
+      other.setAttribute('hidden', '');
+    panel.toggleAttribute('hidden', !open);
+    button.setAttribute('aria-expanded', String(open));
+  });
+}
+
+function editionPanel(me, lang, text) {
+  const e = me.edition;
+  const tools = e.tools.map((tool) =>
+    el('li', { class: `ox-tool ox-tool-${tool.status}` }, [
+      el('span', {
+        class: 'ox-tool-state',
+        text: tool.status === 'ready' ? text.ready : text.soon,
+      }),
+      el('span', { text: tool.label[lang] ?? tool.label.en }),
+    ]),
+  );
+  return el('div', { class: 'ox-menu ox-edition-menu', hidden: '' }, [
+    el('div', {
+      class: 'ox-menu-plan',
+      text: `${text.yourEdition}: ${e.name[lang] ?? e.name.en}`,
+    }),
+    el('div', {
+      class: 'ox-menu-note ox-tagline',
+      text: e.tagline[lang] ?? e.tagline.en,
+    }),
+    el('ul', { class: 'ox-tools' }, tools),
+  ]);
+}
+
+function catalogPanel(me, lang, text) {
+  const items = (me.editions ?? []).map((e) =>
+    el('li', { class: 'ox-catalog-item' }, [
+      el('strong', { text: e.name[lang] ?? e.name.en }),
+      el('span', { text: e.tagline[lang] ?? e.tagline.en }),
+    ]),
+  );
+  return el('div', { class: 'ox-menu ox-catalog-menu', hidden: '' }, [
+    el('div', { class: 'ox-menu-plan', text: text.editionsIntro }),
+    el('ul', { class: 'ox-catalog' }, items),
+    el('a', {
+      href: me.plansUrl || '#',
+      target: '_blank',
+      rel: 'noopener',
+      text: text.seePlans,
+    }),
+  ]);
 }
 
 export function renderAccount(me, doc = document) {
@@ -147,12 +221,37 @@ export function renderAccount(me, doc = document) {
     'aria-expanded': 'false',
     text: me.user?.name || me.user?.email || '',
   });
-  chip.addEventListener('click', () => {
-    const open = menu.hasAttribute('hidden');
-    menu.toggleAttribute('hidden', !open);
-    chip.setAttribute('aria-expanded', String(open));
-  });
-  root.append(chip, menu);
+  togglePanel(chip, menu);
+  if (me.edition) {
+    const lensButton = el('button', {
+      class: 'ox-chip ox-lens',
+      type: 'button',
+      text: `${me.edition.name[lang] ?? me.edition.name.en} ${text.lens}`,
+    });
+    lensButton.addEventListener('click', () => openLens(me.edition.lens));
+    const panel = editionPanel(me, lang, text);
+    const infoButton = el('button', {
+      class: 'ox-chip ox-info',
+      type: 'button',
+      'aria-haspopup': 'true',
+      'aria-expanded': 'false',
+      'aria-label': text.yourEdition,
+      text: 'i',
+    });
+    togglePanel(infoButton, panel);
+    root.append(lensButton, infoButton, chip, panel, menu);
+  } else {
+    const editionsButton = el('button', {
+      class: 'ox-chip',
+      type: 'button',
+      'aria-haspopup': 'true',
+      'aria-expanded': 'false',
+      text: text.editions,
+    });
+    const catalog = catalogPanel(me, lang, text);
+    togglePanel(editionsButton, catalog);
+    root.append(editionsButton, chip, catalog, menu);
+  }
   return root;
 }
 

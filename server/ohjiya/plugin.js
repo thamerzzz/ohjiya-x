@@ -19,6 +19,7 @@ import {
   verifyValue,
 } from './cookies.js';
 import { createEntitlementClient, FREE } from './entitlements.js';
+import { editionCatalog, editionFor } from './editions.js';
 import { decide, ruleForRequest, stripForwardingHeaders } from './gate.js';
 import { createStore } from './store.js';
 import { TokenError, safeEqual, verifyToken } from './token.js';
@@ -189,6 +190,9 @@ export function createAuthHandler(
       return json(res, 200, {
         signedIn: false,
         ...FREE,
+        edition: null,
+        editions: editionCatalog(),
+        plansUrl: `${config.wpUrl}/ohjiya-x/`,
         loginUrl: '/auth/start',
         registerUrl: `${config.wpUrl}/wp-login.php?action=register`,
       });
@@ -203,6 +207,9 @@ export function createAuthHandler(
       company: doc.company,
       plan: doc.plan,
       features: doc.features,
+      edition: editionFor(doc),
+      editions: editionCatalog(),
+      plansUrl: `${config.wpUrl}/ohjiya-x/`,
       accountUrl:
         typeof doc.account_url === 'string' &&
         doc.account_url.startsWith(config.wpUrl)
