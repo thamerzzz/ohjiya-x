@@ -190,7 +190,7 @@ export function createAuthHandler(
         signedIn: false,
         ...FREE,
         loginUrl: '/auth/start',
-        registerUrl: `${config.wpUrl}/my-account/`,
+        registerUrl: `${config.wpUrl}/wp-login.php?action=register`,
       });
     const doc = await entitlements.get(current.uid);
     json(res, 200, {
