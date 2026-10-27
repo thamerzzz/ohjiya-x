@@ -33,10 +33,17 @@ services:
       - .env
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./sites:/etc/caddy/sites:ro
       - caddy-data:/data
       - caddy-config:/config
     depends_on:
       - app
+
+# A named network so the throwaway staging stack (deploy/staging) can join it
+# and be served by this Caddy.
+networks:
+  default:
+    name: ohjiya-net
 
 volumes:
   app-data:

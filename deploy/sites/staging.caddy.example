@@ -1,0 +1,12 @@
+# Copy to deploy/sites/staging.caddy (remove the .example), then reload Caddy:
+#   docker compose -f deploy/compose.yaml --env-file deploy/.env exec caddy caddy reload --config /etc/caddy/Caddyfile
+# STAGING_WP_DOMAIN and STAGING_APP_DOMAIN must be set in deploy/.env too.
+{$STAGING_WP_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy wp-test:80
+}
+
+{$STAGING_APP_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app-test:4173
+}

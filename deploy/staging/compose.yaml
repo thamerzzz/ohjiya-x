@@ -1,0 +1,99 @@
+# Throwaway staging: a clean WordPress + WooCommerce with the entitlements
+# plugin, a staging copy of the app, and a mail catcher. No customer data and
+# no real email: every message WordPress sends lands in Mailpit.
+#
+#   bash deploy/staging/init-env.sh
+#   docker compose -f deploy/staging/compose.yaml --env-file deploy/staging/.env up -d --build
+#   bash deploy/staging/setup.sh
+#   bash deploy/staging/e2e.sh
+services:
+  db:
+    image: mariadb:11
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${STAGING_DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wordpress
+      MARIADB_PASSWORD: ${STAGING_DB_PASSWORD}
+    volumes:
+      - db-data:/var/lib/mysql
+
+  wp-test:
+    image: wordpress:6-php8.2-apache
+    restart: unless-stopped
+    depends_on:
+      - db
+    env_file:
+      - .env
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: ${STAGING_DB_PASSWORD}
+      # $$ is a literal $ for compose; PHP sees $_SERVER.
+      WORDPRESS_CONFIG_EXTRA: |
+        define( 'WP_HOME', 'https://${STAGING_WP_DOMAIN}' );
+        define( 'WP_SITEURL', 'https://${STAGING_WP_DOMAIN}' );
+        define( 'OXE_APP_URL', 'https://${STAGING_APP_DOMAIN}' );
+        define( 'OXE_SSO_SECRET', getenv( 'OXE_SSO_SECRET' ) );
+        define( 'OXE_API_SECRET', getenv( 'OXE_API_SECRET' ) );
+        define( 'OXE_WEBHOOK_SECRET', getenv( 'OXE_WEBHOOK_SECRET' ) );
+        if ( isset( $$_SERVER['HTTP_X_FORWARDED_PROTO'] ) && 'https' === $$_SERVER['HTTP_X_FORWARDED_PROTO'] ) { $$_SERVER['HTTPS'] = 'on'; }
+    volumes:
+      - wp-data:/var/www/html
+      - ../../wordpress/ohjiya-x-entitlements:/var/www/html/wp-content/plugins/ohjiya-x-entitlements:ro
+      - ./mu-plugins:/var/www/html/wp-content/mu-plugins:ro
+
+  wpcli:
+    image: wordpress:cli-php8.2
+    profiles: ["tools"]
+    depends_on:
+      - db
+    env_file:
+      - .env
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: ${STAGING_DB_PASSWORD}
+    volumes:
+      - wp-data:/var/www/html
+      - ../../wordpress/ohjiya-x-entitlements:/var/www/html/wp-content/plugins/ohjiya-x-entitlements:ro
+      - ./mu-plugins:/var/www/html/wp-content/mu-plugins:ro
+
+  mailpit:
+    image: axllent/mailpit
+    restart: unless-stopped
+    ports:
+      # Loopback only: read mail with curl http://127.0.0.1:8025/api/v1/messages
+      - "127.0.0.1:8025:8025"
+
+  app-test:
+    build:
+      context: ../..
+      dockerfile: deploy/Dockerfile
+    restart: unless-stopped
+    environment:
+      GEV_ALLOWED_HOSTS: ${STAGING_APP_DOMAIN}
+      GEV_KEY_SETUP_TRUSTED_PEERS: none
+      OHJIYA_AUTH: "on"
+      OHJIYA_APP_URL: https://${STAGING_APP_DOMAIN}
+      OHJIYA_WP_URL: https://${STAGING_WP_DOMAIN}
+      OXE_SSO_SECRET: ${OXE_SSO_SECRET}
+      OXE_API_SECRET: ${OXE_API_SECRET}
+      OXE_WEBHOOK_SECRET: ${OXE_WEBHOOK_SECRET}
+      OHJIYA_SESSION_SECRET: ${OHJIYA_SESSION_SECRET}
+    volumes:
+      - app-test-data:/app/.gev-cache
+    expose:
+      - "4173"
+
+networks:
+  default:
+    name: ohjiya-net
+    external: true
+
+volumes:
+  db-data:
+  wp-data:
+  app-test-data:

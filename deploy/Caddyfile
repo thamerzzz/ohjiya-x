@@ -12,3 +12,7 @@
 
 	reverse_proxy app:4173
 }
+
+# Extra sites (for example the staging hosts): copy a .caddy.example file from
+# deploy/sites/ to deploy/sites/<name>.caddy. No files means nothing extra is served.
+import /etc/caddy/sites/*.caddy
