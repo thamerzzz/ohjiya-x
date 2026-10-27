@@ -23,6 +23,22 @@ class OXE_Woo {
 		add_action( 'woocommerce_order_status_refunded', array( __CLASS__, 'revoke_order' ) );
 		add_action( 'woocommerce_order_status_cancelled', array( __CLASS__, 'revoke_order' ) );
 		add_action( 'woocommerce_order_status_failed', array( __CLASS__, 'revoke_order' ) );
+		// A plan attaches to an account, so a cart with a plan cannot check out as a guest.
+		add_filter( 'woocommerce_checkout_registration_required', array( __CLASS__, 'require_account' ), 20 );
+		add_filter( 'woocommerce_checkout_registration_enabled', array( __CLASS__, 'require_account' ), 20 );
+	}
+
+	/** True when the cart holds an Ohjiya X plan; otherwise leaves the shop's own setting alone. */
+	public static function require_account( $value ) {
+		if ( ! function_exists( 'WC' ) || ! WC()->cart ) {
+			return $value;
+		}
+		foreach ( WC()->cart->get_cart() as $item ) {
+			if ( get_post_meta( (int) $item['product_id'], '_oxe_edition', true ) ) {
+				return true;
+			}
+		}
+		return $value;
 	}
 
 	public static function product_fields() {
@@ -85,6 +101,10 @@ class OXE_Woo {
 		}
 
 		$user_id = (int) $order->get_user_id();
+		if ( ! $user_id ) { // Guest order (placed before this rule, or by API): match an existing account by billing email.
+			$match   = get_user_by( 'email', (string) $order->get_billing_email() );
+			$user_id = $match ? (int) $match->ID : 0;
+		}
 		if ( ! $user_id ) {
 			$order->add_order_note( 'Ohjiya X: guest checkout, no plan created. The buyer needs an account.' );
 			return;

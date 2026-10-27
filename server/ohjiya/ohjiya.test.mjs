@@ -90,7 +90,7 @@ function fakeWp(docs) {
   };
   return { fetchImpl, calls };
 }
-const PAID = { company: { id: 1, name: 'Co', role: 'owner' }, plan: { edition: 'real_estate', status: 'active', expires: '2027-01-01', seats: 5 }, features: ['voice', 'chat'] };
+const PAID = { account_url: 'https://ohjiya.sa/ohjiya-x/', company: { id: 1, name: 'Co', role: 'owner' }, plan: { edition: 'real_estate', status: 'active', expires: '2027-01-01', seats: 5 }, features: ['voice', 'chat'] };
 
 test('entitlement client: signs requests, caches, serves stale, then falls to free', async () => {
   let t = 1_000_000;
@@ -164,6 +164,7 @@ test('end to end: sign-in flow, session, gating, replay and webhook', async () =
     const me = await (await get(`${base}/api/me`, { cookie: session })).json();
     assert.equal(me.signedIn, true);
     assert.equal(me.plan.edition, 'real_estate');
+    assert.equal(me.accountUrl, 'https://ohjiya.sa/ohjiya-x/');
     assert.deepEqual(me.features, ['voice', 'chat']);
     const voice = await (await get(`${base}/api/realtime/token`, { cookie: session, 'x-forwarded-for': '9.9.9.9' })).json();
     assert.equal(voice.reached, '/api/realtime/token');

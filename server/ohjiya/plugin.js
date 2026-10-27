@@ -203,7 +203,11 @@ export function createAuthHandler(
       company: doc.company,
       plan: doc.plan,
       features: doc.features,
-      accountUrl: `${config.wpUrl}/my-account/ohjiya-x/`,
+      accountUrl:
+        typeof doc.account_url === 'string' &&
+        doc.account_url.startsWith(config.wpUrl)
+          ? doc.account_url
+          : `${config.wpUrl}/ohjiya-x/`,
     });
   }
 

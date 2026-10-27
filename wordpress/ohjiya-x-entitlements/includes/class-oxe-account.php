@@ -15,6 +15,8 @@ class OXE_Account {
 
 	public static function init() {
 		add_action( 'init', array( __CLASS__, 'add_endpoint' ) );
+		add_action( 'init', array( __CLASS__, 'ensure_page' ) );
+		add_shortcode( 'ohjiya_x_account', array( __CLASS__, 'shortcode' ) );
 		add_filter( 'query_vars', array( __CLASS__, 'query_vars' ) );
 		add_filter( 'woocommerce_account_menu_items', array( __CLASS__, 'menu' ) );
 		add_action( 'woocommerce_account_' . self::ENDPOINT . '_endpoint', array( __CLASS__, 'render' ) );
@@ -22,6 +24,47 @@ class OXE_Account {
 		add_action( 'admin_post_oxe_remove', array( __CLASS__, 'handle_remove' ) );
 		add_action( 'user_register', array( __CLASS__, 'claim_invites_by_id' ) );
 		add_action( 'wp_login', array( __CLASS__, 'claim_invites_on_login' ), 10, 2 );
+	}
+
+	const PAGE_OPTION = 'oxe_account_page_id';
+
+	/**
+	 * Own page with [ohjiya_x_account]. The WooCommerce My Account page can live
+	 * under another plugin (BuddyBoss puts it at /members/<user>/shop/), so the app
+	 * links here instead of to a My Account endpoint.
+	 */
+	public static function ensure_page() {
+		$id = (int) get_option( self::PAGE_OPTION );
+		if ( $id && 'publish' === get_post_status( $id ) ) {
+			return;
+		}
+		$id = wp_insert_post(
+			array(
+				'post_type'    => 'page',
+				'post_status'  => 'publish',
+				'post_title'   => OXE_Util::t( 'Ohjiya X', 'أحجية X' ),
+				'post_name'    => 'ohjiya-x',
+				'post_content' => '[ohjiya_x_account]',
+			)
+		);
+		if ( $id && ! is_wp_error( $id ) ) {
+			update_option( self::PAGE_OPTION, (int) $id, false );
+		}
+	}
+
+	public static function account_url() {
+		$id = (int) get_option( self::PAGE_OPTION );
+		$url = $id ? get_permalink( $id ) : '';
+		return $url ? $url : home_url( '/ohjiya-x/' );
+	}
+
+	public static function shortcode() {
+		if ( ! is_user_logged_in() ) {
+			return '<p><a href="' . esc_url( wp_login_url( self::account_url() ) ) . '">' . esc_html( OXE_Util::t( 'Sign in to see your Ohjiya X plan', 'سجّل الدخول لعرض اشتراكك في أحجية X' ) ) . '</a></p>';
+		}
+		ob_start();
+		self::render();
+		return ob_get_clean();
 	}
 
 	public static function add_endpoint() {
@@ -99,7 +142,7 @@ class OXE_Account {
 		$company_id = $user_id ? self::managed_company( $user_id ) : 0;
 		$email      = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
 		if ( ! $company_id || ! is_email( $email ) ) {
-			wp_safe_redirect( wc_get_account_endpoint_url( self::ENDPOINT ) );
+			wp_safe_redirect( self::account_url() );
 			exit;
 		}
 
@@ -118,7 +161,7 @@ class OXE_Account {
 				);
 			}
 		}
-		wp_safe_redirect( wc_get_account_endpoint_url( self::ENDPOINT ) );
+		wp_safe_redirect( self::account_url() );
 		exit;
 	}
 
@@ -133,7 +176,7 @@ class OXE_Account {
 			$wpdb->delete( $t, array( 'id' => $member_id ) );
 			OXE_Plans::changed( array( (int) $row['user_id'] ) );
 		}
-		wp_safe_redirect( wc_get_account_endpoint_url( self::ENDPOINT ) );
+		wp_safe_redirect( self::account_url() );
 		exit;
 	}
 

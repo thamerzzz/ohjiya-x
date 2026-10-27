@@ -33,6 +33,10 @@ R=$(entitlement "$USER_ID"); check "Entitlement: active" "$R" '"status":"active"
 check "Entitlement: voice feature" "$R" '"voice"'; check "Entitlement: company name" "$R" 'E2E Test Co'
 check "Entitlement: owner role" "$R" '"role":"owner"'; check "Entitlement: 3 seats" "$R" '"seats":3'
 
+check "Entitlement: account page link" "$R" '/ohjiya-x/'
+check "Account page answers (200)" "$(curl -sL -o /dev/null -w '%{http_code}' "$WP/ohjiya-x/")" 200
+check "Account page asks for sign-in" "$(curl -sL "$WP/ohjiya-x/")" 'wp-login.php'
+
 echo "== 3. Same order twice adds nothing"
 wp wc shop_order update "$ORDER" --user=admin --status=completed >/dev/null
 EXPIRES1=$(echo "$R" | grep -o '"expires":"[^"]*"')

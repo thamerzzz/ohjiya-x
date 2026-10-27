@@ -22,6 +22,7 @@ class OXE_DB {
 		self::install();
 		OXE_Renewals::schedule();
 		OXE_Account::add_endpoint();
+		OXE_Account::ensure_page();
 		flush_rewrite_rules();
 	}
 

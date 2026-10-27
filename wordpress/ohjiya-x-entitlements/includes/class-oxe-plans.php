@@ -205,6 +205,7 @@ class OXE_Plans {
 			'plan'     => array( 'edition' => null, 'status' => 'none', 'expires' => null, 'seats' => 0 ),
 			'features' => array(),
 			'version'  => (int) get_option( 'oxe_version', 1 ),
+			'account_url' => OXE_Account::account_url(),
 		);
 		if ( ! $best ) {
 			return $doc;
