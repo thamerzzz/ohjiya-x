@@ -7,6 +7,7 @@
  * when the plan has no voice, and its routes answer 401/402 regardless.
  */
 
+import { createAssistantPanel } from './assistant.js';
 import { createLibraryPanel } from './library.js';
 
 const TEXT = {
@@ -227,6 +228,10 @@ export function renderAccount(me, doc = document) {
   const active = me.plan?.status === 'active' && me.company;
   const library = active ? createLibraryPanel(me, lang) : null;
   if (library) togglePanel(library.button, library.panel);
+  const assistant =
+    active && me.features?.includes('chat')
+      ? createAssistantPanel(me, lang)
+      : null;
   if (me.edition) {
     const lensButton = el('button', {
       class: 'ox-chip ox-lens',
@@ -247,11 +252,13 @@ export function renderAccount(me, doc = document) {
     root.append(
       lensButton,
       infoButton,
+      ...(assistant ? [assistant.button] : []),
       ...(library ? [library.button] : []),
       chip,
       panel,
       ...(library ? [library.panel] : []),
       menu,
+      ...(library ? [library.tabs] : []),
     );
   } else {
     const editionsButton = el('button', {
@@ -265,11 +272,13 @@ export function renderAccount(me, doc = document) {
     togglePanel(editionsButton, catalog);
     root.append(
       editionsButton,
+      ...(assistant ? [assistant.button] : []),
       ...(library ? [library.button] : []),
       chip,
       catalog,
       ...(library ? [library.panel] : []),
       menu,
+      ...(library ? [library.tabs] : []),
     );
   }
   return root;

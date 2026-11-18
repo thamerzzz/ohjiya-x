@@ -41,6 +41,24 @@ export function loadOhjiyaConfig(env = process.env) {
       problems.push(`${name} must be at least ${MIN_SECRET} characters`);
     }
   }
+  // Atlas AI endpoint: optional. https only (plain http only for this machine).
+  let assistantUrl = '';
+  if (String(env.ATLAS_AI_URL ?? '').trim()) {
+    try {
+      const parsed = new URL(env.ATLAS_AI_URL);
+      const local = ['localhost', '127.0.0.1', '[::1]'].includes(
+        parsed.hostname,
+      );
+      if (
+        parsed.protocol !== 'https:' &&
+        !(parsed.protocol === 'http:' && local)
+      )
+        throw new Error('scheme');
+      assistantUrl = parsed.href;
+    } catch {
+      problems.push('ATLAS_AI_URL must be an https URL');
+    }
+  }
   if (problems.length) {
     throw new Error(
       `Ohjiya accounts are on but misconfigured: ${problems.join('; ')}`,
@@ -56,6 +74,8 @@ export function loadOhjiyaConfig(env = process.env) {
     apiSecret: env.OXE_API_SECRET,
     webhookSecret: env.OXE_WEBHOOK_SECRET,
     sessionSecret: env.OHJIYA_SESSION_SECRET,
+    assistantUrl,
+    assistantKey: String(env.ATLAS_AI_KEY ?? ''),
     dbPath: env.OHJIYA_DB_PATH || '.gev-cache/ohjiya-auth.db',
     sessionTtlSeconds: 12 * 60 * 60,
     entitlementTtlMs: 10 * 60 * 1000,

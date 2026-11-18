@@ -9,7 +9,11 @@ import {
   filterItems,
   hasView,
   hashParams,
+  STATUS_IDS,
+  legendCounts,
   pointOf,
+  statusColor,
+  statusName,
   tagColor,
   tagName,
 } from './libraryModel.js';
@@ -75,4 +79,33 @@ test('error text exists in both languages and falls back', () => {
   assert.match(errorText('limit_reached', 'ar'), /[؀-ۿ]/);
   assert.equal(errorText('limit_reached', 'en'), 'Your company library is full.');
   assert.equal(errorText('whatever', 'en'), errorText('default', 'en'));
+});
+
+test('statuses have colours and both languages, and the legend counts them', () => {
+  for (const id of STATUS_IDS) {
+    assert.match(statusColor(id), /^#[0-9a-f]{6}$/);
+    assert.ok(statusName(id, 'en') && statusName(id, 'ar'));
+  }
+  assert.equal(statusName('mystery', 'en'), 'Active');
+  const counts = legendCounts([
+    { tag: 'branch', status: 'active' },
+    { tag: 'branch', status: 'attention' },
+    { tag: 'competitor' },
+    { tag: 'weird', status: 'closed' },
+  ]);
+  assert.equal(counts.tags.branch, 2);
+  assert.equal(counts.tags.competitor, 1);
+  assert.equal(counts.statuses.active, 2, 'a missing status counts as active');
+  assert.equal(counts.statuses.attention, 1);
+  assert.equal(counts.statuses.closed, 1);
+});
+
+test('client can edit an item', async () => {
+  let seen;
+  const client = createLibraryClient(async (url, init) => {
+    seen = [url, init.method, init.body];
+    return { status: 200, ok: true, json: async () => ({ id: 3 }) };
+  });
+  await client.updateItem(3, { status: 'closed' });
+  assert.deepEqual(seen, ['/api/library/items/3', 'PATCH', '{"status":"closed"}']);
 });

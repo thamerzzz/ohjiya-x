@@ -4,7 +4,8 @@ import test from 'node:test';
 import { loadOhjiyaConfig } from './config.js';
 import { SESSION_COOKIE, signValue } from './cookies.js';
 import { FREE } from './entitlements.js';
-import { LIMITS, cleanHash, createLibrary } from './library.js';
+import { LIMITS, STATUSES, cleanHash, createLibrary } from './library.js';
+import { DatabaseSync } from 'node:sqlite';
 import { createAuthHandler } from './plugin.js';
 import { createStore } from './store.js';
 
@@ -242,4 +243,65 @@ test('HTTP: library needs sign-in and an active plan, is per company, and refuse
     server.close();
     store.close();
   }
+});
+
+test('items carry a status, named fields and notes, and can be edited by their company only', () => {
+  const { library, store } = lib();
+  const made = call(library, 'POST', '/api/library/items', {
+    kind: 'place',
+    name: 'Olaya branch',
+    tag: 'branch',
+    geom: { lat: 24.69, lon: 46.685 },
+    status: 'planned',
+    fields: [
+      { key: ' Manager ', value: 'Sara' },
+      { key: 'Area', value: '420 m2' },
+    ],
+    notes: 'Opens in Q3.\n\n\n\nCheck parking.',
+  });
+  assert.equal(made.status, 201);
+  assert.equal(made.body.status, 'planned');
+  assert.deepEqual(made.body.fields[0], { key: 'Manager', value: 'Sara' });
+  assert.equal(made.body.notes, 'Opens in Q3.\n\nCheck parking.');
+
+  const plain = call(library, 'POST', '/api/library/items', { kind: 'place', name: 'Plain', geom: { lat: 1, lon: 1 } });
+  assert.equal(plain.body.status, 'active', 'default status');
+  assert.deepEqual(plain.body.fields, []);
+
+  const bad = (body) => call(library, 'POST', '/api/library/items', { kind: 'place', name: 'x', geom: { lat: 1, lon: 1 }, ...body }).body.error;
+  assert.equal(bad({ status: 'on-fire' }), 'bad_status');
+  assert.equal(bad({ fields: 'nope' }), 'bad_fields');
+  assert.equal(bad({ fields: [{ key: '', value: 'v' }] }), 'bad_fields');
+  assert.equal(bad({ fields: Array.from({ length: LIMITS.fields + 1 }, (_, i) => ({ key: `k${i}`, value: '' })) }), 'bad_fields');
+  assert.equal(bad({ notes: 42 }), 'bad_notes');
+  assert.ok(STATUSES.includes('attention'));
+
+  const patch = (id, body, company = 1) => call(library, 'PATCH', `/api/library/items/${id}`, body, company);
+  const edited = patch(made.body.id, { status: 'attention', fields: [{ key: 'Manager', value: 'Huda' }] });
+  assert.equal(edited.status, 200);
+  assert.equal(edited.body.status, 'attention');
+  assert.equal(edited.body.fields[0].value, 'Huda');
+  assert.equal(edited.body.notes, 'Opens in Q3.\n\nCheck parking.', 'untouched details stay');
+  assert.deepEqual(edited.body.geom, { lat: 24.69, lon: 46.685 }, 'geometry cannot change');
+  assert.equal(patch(made.body.id, { name: 'Olaya HQ', tag: 'competitor' }).body.tag, 'competitor');
+  assert.equal(patch(made.body.id, { name: '  ' }).body.error, 'bad_name');
+  assert.equal(patch(made.body.id, { tag: 'nope' }).body.error, 'bad_tag');
+  assert.equal(patch(made.body.id, { geom: { lat: 5, lon: 5 } }).body.geom.lat, 24.69);
+  assert.equal(patch(made.body.id, { status: 'x' }).body.error, 'bad_status');
+  assert.equal(patch(made.body.id, { status: 'closed' }, 2).status, 404, 'another company cannot edit');
+  assert.equal(patch(9999, { status: 'closed' }).status, 404);
+  assert.equal(call(library, 'GET', '/api/library').body.items.find((i) => i.id === made.body.id).name, 'Olaya HQ');
+  store.close();
+});
+
+test('a library created before details existed gains them without losing items', () => {
+  const db = new DatabaseSync(':memory:');
+  db.exec(`CREATE TABLE lib_item (id INTEGER PRIMARY KEY AUTOINCREMENT, company_id INTEGER NOT NULL, kind TEXT NOT NULL, name TEXT NOT NULL, tag TEXT NOT NULL, geom TEXT NOT NULL, created_by INTEGER NOT NULL, created_ms INTEGER NOT NULL)`);
+  db.prepare('INSERT INTO lib_item (company_id, kind, name, tag, geom, created_by, created_ms) VALUES (1, ?, ?, ?, ?, 7, 1)').run('place', 'Old pin', 'branch', '{"lat":1,"lon":2}');
+  const library = createLibrary(db);
+  const item = library.handle({ method: 'GET', path: '/api/library', companyId: 1, userId: 7 }).body.items[0];
+  assert.equal(item.name, 'Old pin');
+  assert.equal(item.status, 'active');
+  assert.deepEqual(item.fields, []);
+  db.close();
 });

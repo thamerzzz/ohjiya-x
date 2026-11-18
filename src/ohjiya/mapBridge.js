@@ -13,7 +13,7 @@ import {
   setOverlaySourceVisible,
 } from '../overlays/worldOverlay.js';
 import { claimPointer, releasePointer } from '../data/inputOwnership.js';
-import { tagColor } from './libraryModel.js';
+import { statusColor, tagColor } from './libraryModel.js';
 
 const OWNER = 'ohjiya-library';
 const OVERLAY_SOURCE = 'ohjiya-library';
@@ -192,8 +192,11 @@ export function initMapBridge({ viewer }) {
           point: {
             pixelSize: 12,
             color: colour(item.tag),
-            outlineColor: Cesium.Color.BLACK.withAlpha(0.7),
-            outlineWidth: 2,
+            // The ring is the status: green active, blue planned, amber attention, grey closed.
+            outlineColor: Cesium.Color.fromCssColorString(
+              statusColor(item.status),
+            ),
+            outlineWidth: 3,
             heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
             disableDepthTestDistance: Number.POSITIVE_INFINITY,
           },

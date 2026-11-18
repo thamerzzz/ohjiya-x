@@ -20,7 +20,18 @@ export const PLACE_TAGS = Object.freeze([
   'other',
 ]);
 
+export const STATUSES = Object.freeze([
+  'active',
+  'planned',
+  'attention',
+  'closed',
+]);
+
 export const LIMITS = Object.freeze({
+  fields: 8,
+  fieldKeyChars: 40,
+  fieldValueChars: 200,
+  notesChars: 1000,
   items: 500,
   tactics: 50,
   polygonPoints: 200,
@@ -100,6 +111,49 @@ export function cleanHash(value) {
   return raw;
 }
 
+/** Notes keep their line breaks; everything else control-like is dropped. */
+const notesText = (value) =>
+  typeof value === 'string'
+    ? value
+        .replace(/[^\S\n]+/g, ' ')
+        .replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, '')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim()
+        .slice(0, LIMITS.notesChars)
+    : '';
+
+/**
+ * The editable details of an item: a status, a few named fields (manager,
+ * size, price...) and free notes. Only keys present in `input` change `base`.
+ * @returns {{ok: true, meta: object} | {ok: false, error: string}}
+ */
+function metaOf(input, base = { status: 'active', fields: [], notes: '' }) {
+  const meta = { status: base.status, fields: base.fields, notes: base.notes };
+  if (input?.status !== undefined) {
+    if (!STATUSES.includes(input.status))
+      return { ok: false, error: 'bad_status' };
+    meta.status = input.status;
+  }
+  if (input?.fields !== undefined) {
+    if (!Array.isArray(input.fields) || input.fields.length > LIMITS.fields)
+      return { ok: false, error: 'bad_fields' };
+    const fields = [];
+    for (const f of input.fields) {
+      const key = text(f?.key, LIMITS.fieldKeyChars);
+      const value = text(f?.value, LIMITS.fieldValueChars);
+      if (!key) return { ok: false, error: 'bad_fields' };
+      fields.push({ key, value });
+    }
+    meta.fields = fields;
+  }
+  if (input?.notes !== undefined) {
+    if (typeof input.notes !== 'string')
+      return { ok: false, error: 'bad_notes' };
+    meta.notes = notesText(input.notes);
+  }
+  return { ok: true, meta };
+}
+
 function tagFilter(value) {
   if (!Array.isArray(value)) return [];
   return [...new Set(value.filter((t) => PLACE_TAGS.includes(t)))];
@@ -128,14 +182,28 @@ export function createLibrary(db) {
     );
     CREATE INDEX IF NOT EXISTS lib_tactic_company ON lib_tactic (company_id);
   `);
+  // Details added after the first schema: status, fields, notes.
+  if (
+    !db
+      .prepare('PRAGMA table_info(lib_item)')
+      .all()
+      .some((c) => c.name === 'meta')
+  )
+    db.exec("ALTER TABLE lib_item ADD COLUMN meta TEXT NOT NULL DEFAULT '{}'");
   const listItems = db.prepare(
-    'SELECT id, kind, name, tag, geom, created_ms FROM lib_item WHERE company_id = ? ORDER BY id',
+    'SELECT id, kind, name, tag, geom, meta, created_ms FROM lib_item WHERE company_id = ? ORDER BY id',
   );
   const countItems = db.prepare(
     'SELECT COUNT(*) AS n FROM lib_item WHERE company_id = ?',
   );
   const insertItem = db.prepare(
-    'INSERT INTO lib_item (company_id, kind, name, tag, geom, created_by, created_ms) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO lib_item (company_id, kind, name, tag, geom, meta, created_by, created_ms) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+  );
+  const getItem = db.prepare(
+    'SELECT id, kind, name, tag, geom, meta, created_ms FROM lib_item WHERE id = ? AND company_id = ?',
+  );
+  const updateItem = db.prepare(
+    'UPDATE lib_item SET name = ?, tag = ?, meta = ? WHERE id = ? AND company_id = ?',
   );
   const deleteItem = db.prepare(
     'DELETE FROM lib_item WHERE id = ? AND company_id = ?',
@@ -153,12 +221,21 @@ export function createLibrary(db) {
     'DELETE FROM lib_tactic WHERE id = ? AND company_id = ?',
   );
 
+  const metaFrom = (raw) => {
+    const m = JSON.parse(raw || '{}');
+    return {
+      status: STATUSES.includes(m.status) ? m.status : 'active',
+      fields: Array.isArray(m.fields) ? m.fields : [],
+      notes: typeof m.notes === 'string' ? m.notes : '',
+    };
+  };
   const itemOut = (row) => ({
     id: row.id,
     kind: row.kind,
     name: row.name,
     tag: row.tag,
     geom: JSON.parse(row.geom),
+    ...metaFrom(row.meta),
     created_ms: row.created_ms,
   });
   const tacticOut = (row) => ({
@@ -187,6 +264,7 @@ export function createLibrary(db) {
             items: listItems.all(companyId).map(itemOut),
             tactics: listTactics.all(companyId).map(tacticOut),
             tags: PLACE_TAGS,
+            statuses: STATUSES,
             limits: { items: LIMITS.items, tactics: LIMITS.tactics },
           },
         };
@@ -200,6 +278,8 @@ export function createLibrary(db) {
         if (!PLACE_TAGS.includes(tag)) return bad('bad_tag');
         const geom = geometryOf(kind, body?.geom);
         if (!geom) return bad('bad_geometry');
+        const details = metaOf(body);
+        if (!details.ok) return bad(details.error);
         if (countItems.get(companyId).n >= LIMITS.items)
           return {
             status: 409,
@@ -211,6 +291,7 @@ export function createLibrary(db) {
           name,
           tag,
           JSON.stringify(geom),
+          JSON.stringify(details.meta),
           userId,
           now,
         );
@@ -222,7 +303,37 @@ export function createLibrary(db) {
             name,
             tag,
             geom: JSON.stringify(geom),
+            meta: JSON.stringify(details.meta),
             created_ms: now,
+          }),
+        };
+      }
+
+      if (parts[0] === 'items' && method === 'PATCH' && parts.length === 2) {
+        const id = Number(parts[1]);
+        if (!Number.isInteger(id) || id < 1) return bad('bad_id');
+        const row = getItem.get(id, companyId);
+        if (!row) return { status: 404, body: { error: 'not_found' } };
+        let name = row.name;
+        if (body?.name !== undefined) {
+          name = text(body.name, NAME_MAX);
+          if (!name) return bad('bad_name');
+        }
+        let tag = row.tag;
+        if (body?.tag !== undefined) {
+          if (!PLACE_TAGS.includes(body.tag)) return bad('bad_tag');
+          tag = body.tag;
+        }
+        const details = metaOf(body, metaFrom(row.meta));
+        if (!details.ok) return bad(details.error);
+        updateItem.run(name, tag, JSON.stringify(details.meta), id, companyId);
+        return {
+          status: 200,
+          body: itemOut({
+            ...row,
+            name,
+            tag,
+            meta: JSON.stringify(details.meta),
           }),
         };
       }

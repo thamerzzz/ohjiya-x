@@ -284,3 +284,251 @@ body.ox-picking canvas {
   z-index: 120;
   pointer-events: none;
 }
+
+/* Status badges, library profile and saved-view tabs. */
+#ox-account .ox-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border: 1px solid var(--badge);
+  border-radius: 6px;
+  color: var(--badge);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+#ox-account .ox-menu button.ox-lib-open {
+  flex: 1 1 120px;
+  padding: 2px 0;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+#ox-account .ox-profile {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#ox-account .ox-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#ox-account .ox-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr auto;
+  gap: 6px;
+  align-items: center;
+}
+
+#ox-account .ox-form textarea {
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font: inherit;
+  resize: vertical;
+}
+
+#ox-account .ox-form textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* A second line in the toolbar: one tab per saved view. */
+#ox-account .ox-tabs {
+  display: flex;
+  flex: 1 0 100%;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+#ox-account .ox-tabs[hidden] {
+  display: none;
+}
+
+#ox-account .ox-tab {
+  max-width: 180px;
+  padding: 4px 12px;
+  overflow: hidden;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+#ox-account .ox-tab:hover,
+#ox-account .ox-tab:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+#ox-account .ox-tab.on {
+  border-color: var(--brand-red);
+  color: var(--text-primary);
+}
+
+/* Atlas AI dock: slides over the right edge, on top of the HUD rail. */
+.ox-dock {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 115;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(360px, 100vw);
+  padding: 14px;
+  background: rgba(10, 10, 15, 0.97);
+  border-left: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.ox-dock[hidden] {
+  display: none;
+}
+
+.ox-dock .ox-dock-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.ox-dock button {
+  padding: 6px 12px;
+  background: none;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+}
+
+.ox-dock button.ox-primary {
+  border-color: var(--accent);
+}
+
+.ox-dock button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.ox-dock .ox-dock-close {
+  padding: 2px 10px;
+  font-size: 16px;
+}
+
+.ox-dock .ox-chat {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+.ox-dock .ox-msg {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ox-dock .ox-msg-who {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.ox-dock .ox-msg-body {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.ox-dock .ox-msg-me .ox-msg-body {
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+}
+
+.ox-dock .ox-thinking {
+  color: var(--text-secondary);
+}
+
+.ox-dock .ox-proposals {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ox-dock .ox-proposals-head {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.ox-dock .ox-proposal {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+}
+
+.ox-dock .ox-proposal-title {
+  font-weight: 600;
+}
+
+.ox-dock .ox-proposal-detail {
+  color: var(--text-secondary);
+}
+
+.ox-dock .ox-row {
+  display: flex;
+  gap: 8px;
+}
+
+.ox-dock .ox-proposal-state[data-kind='ok'] {
+  color: #5dff9f;
+}
+
+.ox-dock .ox-proposal-state[data-kind='error'] {
+  color: var(--brand-red);
+}
+
+.ox-dock .ox-dock-note {
+  color: var(--brand-red);
+}
+
+.ox-dock .ox-dock-input {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ox-dock textarea {
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font: inherit;
+  resize: none;
+}
+
+.ox-dock textarea:focus-visible,
+.ox-dock button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}

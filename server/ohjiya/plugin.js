@@ -21,7 +21,12 @@ import {
 import { createEntitlementClient, FREE } from './entitlements.js';
 import { editionCatalog, editionFor } from './editions.js';
 import { decide, ruleForRequest, stripForwardingHeaders } from './gate.js';
-import { createLibrary } from './library.js';
+import {
+  AssistantError,
+  MAX_MESSAGE_CHARS,
+  createAssistant,
+} from './assistant.js';
+import { cleanHash, createLibrary } from './library.js';
 import { createStore } from './store.js';
 import { TokenError, safeEqual, verifyToken } from './token.js';
 
@@ -90,10 +95,19 @@ async function readBody(req, limit) {
 
 export function createAuthHandler(
   config,
-  { store = createStore(config.dbPath), fetchImpl } = {},
+  { store = createStore(config.dbPath), fetchImpl, ...deps } = {},
 ) {
   const entitlements = createEntitlementClient({ config, store, fetchImpl });
   const library = createLibrary(store.db);
+  const assistant =
+    deps.assistant ??
+    createAssistant({
+      url: config.assistantUrl,
+      key: config.assistantKey,
+      fetchImpl,
+    });
+  const asked = new Map(); // user id -> recent question times, for a per-user rate limit
+  const ASSISTANT_PER_MINUTE = 20;
   const secure = config.secureCookies;
 
   function session(req) {
@@ -292,6 +306,65 @@ export function createAuthHandler(
     return json(res, result.status, result.body);
   }
 
+  /** /api/assistant: ask Atlas AI. Needs an active plan with the chat feature. */
+  async function assistantRoute(req, res, url) {
+    const current = session(req);
+    if (!current) return json(res, 401, { error: 'sign_in_required' });
+    const doc = await entitlements.get(current.uid);
+    const companyId = doc.company?.id;
+    if (
+      doc.plan?.status !== 'active' ||
+      !doc.features.includes('chat') ||
+      !Number.isInteger(companyId)
+    )
+      return json(res, 402, { error: 'plan_required', feature: 'chat' });
+    if (url.pathname === '/api/assistant/status' && req.method === 'GET')
+      return json(res, 200, { connected: assistant.connected });
+    if (url.pathname !== '/api/assistant/message' || req.method !== 'POST')
+      return json(res, 404, { error: 'not_found' });
+    if (!sameOrigin(req)) return json(res, 403, { error: 'cross_site' });
+    if (
+      !/^application\/json\b/i.test(String(req.headers['content-type'] ?? ''))
+    )
+      return json(res, 415, { error: 'json_required' });
+    let body;
+    try {
+      body = JSON.parse(await readBody(req, LIBRARY_MAX_BYTES));
+    } catch {
+      return json(res, 400, { error: 'bad_json' });
+    }
+    const message =
+      typeof body?.message === 'string' ? body.message.trim() : '';
+    if (!message || message.length > MAX_MESSAGE_CHARS)
+      return json(res, 400, { error: 'bad_message' });
+    const now = Date.now();
+    const recent = (asked.get(current.uid) ?? []).filter(
+      (t) => now - t < 60_000,
+    );
+    if (recent.length >= ASSISTANT_PER_MINUTE)
+      return json(res, 429, { error: 'slow_down' });
+    asked.set(current.uid, [...recent, now]);
+    const items = library.handle({
+      method: 'GET',
+      path: '/api/library',
+      companyId,
+      userId: current.uid,
+    }).body.items;
+    try {
+      const view = cleanHash(body?.view);
+      const answer = await assistant.ask({
+        message,
+        language: body?.language,
+        view: view ? Object.fromEntries(new URLSearchParams(view)) : null,
+        library: items,
+      });
+      return json(res, 200, answer);
+    } catch (error) {
+      if (!(error instanceof AssistantError)) throw error;
+      return json(res, error.status, { error: error.code });
+    }
+  }
+
   async function gate(req, res, next) {
     const rule = ruleForRequest(req.url);
     if (!rule) return next();
@@ -330,6 +403,11 @@ export function createAuthHandler(
       if (pathname === '/api/me' && method === 'GET') return await me(req, res);
       if (pathname === '/api/hooks/entitlement' && method === 'POST')
         return await hook(req, res);
+      if (
+        pathname === '/api/assistant' ||
+        pathname.startsWith('/api/assistant/')
+      )
+        return await assistantRoute(req, res, url);
       if (pathname === '/api/library' || pathname.startsWith('/api/library/'))
         return await libraryRoute(req, res, url);
       return await gate(req, res, next);

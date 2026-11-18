@@ -13,6 +13,30 @@ export const TAGS = Object.freeze({
 });
 export const TAG_IDS = Object.freeze(Object.keys(TAGS));
 
+export const STATUSES = Object.freeze({
+  active: { color: '#5dff9f', en: 'Active', ar: 'نشط' },
+  planned: { color: '#39d0ff', en: 'Planned', ar: 'مخطط' },
+  attention: { color: '#ffb547', en: 'Needs attention', ar: 'يحتاج انتباهًا' },
+  closed: { color: '#8a93a6', en: 'Closed', ar: 'مغلق' },
+});
+export const STATUS_IDS = Object.freeze(Object.keys(STATUSES));
+export const statusColor = (status) =>
+  (STATUSES[status] ?? STATUSES.active).color;
+export const statusName = (status, lang) =>
+  (STATUSES[status] ?? STATUSES.active)[lang === 'ar' ? 'ar' : 'en'];
+
+/** How many items carry each tag and each status: the numbers on the legend. */
+export function legendCounts(items) {
+  const tags = Object.fromEntries(TAG_IDS.map((id) => [id, 0]));
+  const statuses = Object.fromEntries(STATUS_IDS.map((id) => [id, 0]));
+  for (const item of items) {
+    if (item.tag in tags) tags[item.tag] += 1;
+    const status = item.status in statuses ? item.status : 'active';
+    statuses[status] += 1;
+  }
+  return { tags, statuses };
+}
+
 export const tagColor = (tag) => (TAGS[tag] ?? TAGS.other).color;
 export const tagName = (tag, lang) =>
   (TAGS[tag] ?? TAGS.other)[lang === 'ar' ? 'ar' : 'en'];
@@ -78,6 +102,10 @@ const MESSAGES = {
     bad_geometry: 'That shape is not valid.',
     bad_view: 'This view cannot be saved.',
     cross_site: 'Request refused.',
+    bad_status: 'That status is not valid.',
+    bad_fields: 'Each detail needs a name (up to 8 details).',
+    bad_notes: 'Notes could not be saved.',
+    not_found: 'That item no longer exists.',
     default: 'Something went wrong. Try again.',
   },
   ar: {
@@ -88,6 +116,10 @@ const MESSAGES = {
     bad_geometry: 'هذا الشكل غير صالح.',
     bad_view: 'لا يمكن حفظ هذا العرض.',
     cross_site: 'تم رفض الطلب.',
+    bad_status: 'هذه الحالة غير صالحة.',
+    bad_fields: 'كل تفصيل يحتاج اسمًا (حتى 8 تفاصيل).',
+    bad_notes: 'تعذّر حفظ الملاحظات.',
+    not_found: 'هذا العنصر لم يعد موجودًا.',
     default: 'حدث خطأ. حاول مرة أخرى.',
   },
 };
@@ -120,6 +152,8 @@ export function createLibraryClient(fetchImpl = globalThis.fetch) {
   return {
     load: () => call('/api/library'),
     addItem: (item) => call('/api/library/items', 'POST', item),
+    updateItem: (id, changes) =>
+      call(`/api/library/items/${id}`, 'PATCH', changes),
     removeItem: (id) => call(`/api/library/items/${id}`, 'DELETE'),
     addTactic: (tactic) => call('/api/library/tactics', 'POST', tactic),
     removeTactic: (id) => call(`/api/library/tactics/${id}`, 'DELETE'),
