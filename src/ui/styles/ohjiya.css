@@ -1,4 +1,4 @@
-/* Ohjiya X account chip, top of the map, at the inline end (right in English, left in Arabic). */
+/* Ohjiya X account chip, top right of the map in both languages (the logo stays top left, even in Arabic). */
 #ox-account {
   display: flex;
   flex-wrap: wrap;
@@ -7,7 +7,7 @@
   max-width: calc(100vw - 24px);
   position: fixed;
   top: 32px;
-  inset-inline-end: 16px;
+  right: 16px;
   z-index: 110;
   font-family: inherit;
 }
@@ -40,7 +40,7 @@
 
 #ox-account .ox-menu {
   position: absolute;
-  inset-inline-end: 0;
+  right: 0;
   top: calc(100% + 8px);
   display: flex;
   flex-direction: column;
@@ -148,4 +148,139 @@
     top: 12px;
     inset-inline-end: 8px;
   }
+}
+
+/* Company library panel. */
+#ox-account .ox-library-menu {
+  width: min(380px, calc(100vw - 32px));
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+  background: rgba(10, 10, 15, 0.96);
+}
+
+#ox-account .ox-menu-plan {
+  font-weight: 600;
+}
+
+#ox-account .ox-library-menu .ox-menu-note {
+  color: var(--text-secondary);
+}
+
+#ox-account .ox-library-menu .ox-menu-note.ox-status {
+  color: var(--brand-red);
+}
+
+#ox-account .ox-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+#ox-account .ox-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#ox-account .ox-form input,
+#ox-account .ox-form select {
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font: inherit;
+}
+
+#ox-account .ox-form input:focus-visible,
+#ox-account .ox-form select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+#ox-account .ox-menu button.ox-primary {
+  padding: 6px 12px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+}
+
+#ox-account .ox-menu button.ox-danger {
+  color: var(--brand-red);
+}
+
+#ox-account .ox-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+#ox-account .ox-menu button.ox-tag {
+  padding: 4px 10px;
+  border: 1px solid var(--tag);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  opacity: 0.55;
+}
+
+#ox-account .ox-menu button.ox-tag.on {
+  color: var(--text-primary);
+  opacity: 1;
+}
+
+#ox-account .ox-lib-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#ox-account .ox-lib-item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  align-items: center;
+}
+
+#ox-account .ox-lib-name {
+  flex: 1 1 120px;
+  overflow-wrap: anywhere;
+}
+
+#ox-account .ox-lib-tag {
+  color: var(--text-secondary);
+}
+
+#ox-account .ox-dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+#ox-account .ox-status {
+  color: var(--brand-red);
+}
+
+/* Picking a point or area on the map. */
+body.ox-picking canvas {
+  cursor: crosshair !important;
+}
+
+.ox-pick-hint {
+  position: fixed;
+  inset-block-start: 84px;
+  inset-inline: 0;
+  margin-inline: auto;
+  width: fit-content;
+  max-width: calc(100vw - 32px);
+  padding: 8px 14px;
+  background: rgba(10, 10, 15, 0.96);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  color: var(--text-primary);
+  font-size: 12px;
+  z-index: 120;
+  pointer-events: none;
 }

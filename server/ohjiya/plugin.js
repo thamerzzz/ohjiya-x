@@ -21,12 +21,14 @@ import {
 import { createEntitlementClient, FREE } from './entitlements.js';
 import { editionCatalog, editionFor } from './editions.js';
 import { decide, ruleForRequest, stripForwardingHeaders } from './gate.js';
+import { createLibrary } from './library.js';
 import { createStore } from './store.js';
 import { TokenError, safeEqual, verifyToken } from './token.js';
 
 const STATE_TTL_SECONDS = 300;
 const HOOK_WINDOW_SECONDS = 300;
 const HOOK_MAX_BYTES = 8 * 1024;
+const LIBRARY_MAX_BYTES = 16 * 1024;
 
 const nowSeconds = () => Math.floor(Date.now() / 1000);
 
@@ -91,6 +93,7 @@ export function createAuthHandler(
   { store = createStore(config.dbPath), fetchImpl } = {},
 ) {
   const entitlements = createEntitlementClient({ config, store, fetchImpl });
+  const library = createLibrary(store.db);
   const secure = config.secureCookies;
 
   function session(req) {
@@ -252,6 +255,43 @@ export function createAuthHandler(
     res.end();
   }
 
+  /** /api/library: the signed-in company's places, areas and tactics. Active plan only. */
+  async function libraryRoute(req, res, url) {
+    const current = session(req);
+    if (!current) return json(res, 401, { error: 'sign_in_required' });
+    const doc = await entitlements.get(current.uid);
+    const companyId = doc.company?.id;
+    if (doc.plan?.status !== 'active' || !Number.isInteger(companyId))
+      return json(res, 402, { error: 'plan_required' });
+    let body = null;
+    if (req.method !== 'GET' && req.method !== 'DELETE') {
+      if (!sameOrigin(req)) return json(res, 403, { error: 'cross_site' });
+      if (
+        !/^application\/json\b/i.test(String(req.headers['content-type'] ?? ''))
+      )
+        return json(res, 415, { error: 'json_required' });
+      try {
+        body = JSON.parse(await readBody(req, LIBRARY_MAX_BYTES));
+      } catch {
+        return json(res, 400, { error: 'bad_json' });
+      }
+    } else if (req.method === 'DELETE' && !sameOrigin(req)) {
+      return json(res, 403, { error: 'cross_site' });
+    }
+    const result = library.handle({
+      method: req.method,
+      path: url.pathname,
+      body,
+      companyId,
+      userId: current.uid,
+    });
+    if (result.status === 204) {
+      res.writeHead(204, { 'Cache-Control': 'no-store' });
+      return res.end();
+    }
+    return json(res, result.status, result.body);
+  }
+
   async function gate(req, res, next) {
     const rule = ruleForRequest(req.url);
     if (!rule) return next();
@@ -290,6 +330,8 @@ export function createAuthHandler(
       if (pathname === '/api/me' && method === 'GET') return await me(req, res);
       if (pathname === '/api/hooks/entitlement' && method === 'POST')
         return await hook(req, res);
+      if (pathname === '/api/library' || pathname.startsWith('/api/library/'))
+        return await libraryRoute(req, res, url);
       return await gate(req, res, next);
     } catch (error) {
       console.error('[ohjiya] request failed:', error);

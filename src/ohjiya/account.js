@@ -7,6 +7,8 @@
  * when the plan has no voice, and its routes answer 401/402 regardless.
  */
 
+import { createLibraryPanel } from './library.js';
+
 const TEXT = {
   en: {
     signIn: 'Sign in / Register',
@@ -222,6 +224,9 @@ export function renderAccount(me, doc = document) {
     text: me.user?.name || me.user?.email || '',
   });
   togglePanel(chip, menu);
+  const active = me.plan?.status === 'active' && me.company;
+  const library = active ? createLibraryPanel(me, lang) : null;
+  if (library) togglePanel(library.button, library.panel);
   if (me.edition) {
     const lensButton = el('button', {
       class: 'ox-chip ox-lens',
@@ -239,7 +244,15 @@ export function renderAccount(me, doc = document) {
       text: 'i',
     });
     togglePanel(infoButton, panel);
-    root.append(lensButton, infoButton, chip, panel, menu);
+    root.append(
+      lensButton,
+      infoButton,
+      ...(library ? [library.button] : []),
+      chip,
+      panel,
+      ...(library ? [library.panel] : []),
+      menu,
+    );
   } else {
     const editionsButton = el('button', {
       class: 'ox-chip',
@@ -250,7 +263,14 @@ export function renderAccount(me, doc = document) {
     });
     const catalog = catalogPanel(me, lang, text);
     togglePanel(editionsButton, catalog);
-    root.append(editionsButton, chip, catalog, menu);
+    root.append(
+      editionsButton,
+      ...(library ? [library.button] : []),
+      chip,
+      catalog,
+      ...(library ? [library.panel] : []),
+      menu,
+    );
   }
   return root;
 }

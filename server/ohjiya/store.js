@@ -51,6 +51,8 @@ export function createStore(dbPath = ':memory:') {
     dropEntitlements(userIds) {
       for (const id of userIds) delEnt.run(id);
     },
+    /** The open database, for modules that keep their own tables (library). */
+    db,
     close() {
       db.close();
     },

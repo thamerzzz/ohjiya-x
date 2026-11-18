@@ -2,6 +2,7 @@ import { SceneDirector } from '../scenes/director.js';
 import { initAnnotations } from '../annotations/index.js';
 import { initDrawTool } from '../annotations/drawTool.js';
 import { initGeoFileImport } from '../ui/geoFileImport.js';
+import { initMapBridge } from '../ohjiya/mapBridge.js';
 import { initImageryBoxTool } from '../ui/imageryBoxTool.js';
 import { createRecentImageryPanel } from '../ui/recentImagery.js';
 import { initGevVoiceCommands } from '../voice/gevRealtime.js';
@@ -57,6 +58,9 @@ export function createApplicationTools({
   // lifetime rather than to whoever last pressed the button.
   const drawTool = initDrawTool({ viewer, annotations });
   defer(() => drawTool?.destroy());
+  // Ohjiya X company library: picks points and areas, draws the saved ones.
+  const mapBridge = initMapBridge({ viewer });
+  defer(() => mapBridge?.destroy());
   // DISPLAY ▸ Import: the person's own GeoJSON/KML/KMZ/GPX files, each its
   // own data source. They live for the page session, so the application
   // lifetime removes them and the drop listeners on the viewer container.
