@@ -5,6 +5,7 @@
  * also appear as a row of tabs under the toolbar. Shown to signed-in users with
  * an active plan.
  */
+import { HEX_SIZES_M, hexBins } from './hexModel.js';
 import {
   STATUS_IDS,
   TAG_IDS,
@@ -57,6 +58,9 @@ const TEXT = {
     notes: 'Notes',
     saved: 'Saved.',
     views: 'Saved views',
+    density: 'Density map',
+    densityOff: 'Off',
+    densitySize: (m) => (m >= 1000 ? `${m / 1000} km` : `${m} m`),
     count: (n, max) => `${n} of ${max}`,
   },
   ar: {
@@ -95,12 +99,16 @@ const TEXT = {
     notes: 'ملاحظات',
     saved: 'تم الحفظ.',
     views: 'العروض المحفوظة',
+    density: 'خريطة الكثافة',
+    densityOff: 'إيقاف',
+    densitySize: (m) => (m >= 1000 ? `${m / 1000} كم` : `${m} م`),
     count: (n, max) => `${n} من ${max}`,
   },
 };
 
 const TAGS_KEY = 'ox-library-tags';
 const ACTIVE_KEY = 'ox-active-tactic';
+const HEX_KEY = 'ox-library-hex';
 const MAX_FIELDS = 8;
 const MAX_TABS = 6;
 
@@ -112,6 +120,21 @@ function readTags() {
       : [];
   } catch {
     return [];
+  }
+}
+function readHex() {
+  try {
+    const n = Number(sessionStorage.getItem(HEX_KEY));
+    return HEX_SIZES_M.includes(n) ? n : 0;
+  } catch {
+    return 0;
+  }
+}
+function writeHex(size) {
+  try {
+    sessionStorage.setItem(HEX_KEY, String(size));
+  } catch {
+    /* the setting just won't survive a reload */
   }
 }
 function writeTags(tags) {
@@ -164,6 +187,7 @@ export function createLibraryPanel(me, lang, deps = {}) {
     });
   let data = { items: [], tactics: [], limits: { items: 500, tactics: 50 } };
   let tags = readTags();
+  let hexSize = readHex(); // 0 = density map off
   let status = '';
   let form = null; // a place or area just picked, waiting for a name
   let profileId = null; // the item whose profile is open
@@ -189,7 +213,11 @@ export function createLibraryPanel(me, lang, deps = {}) {
   };
   const fail = (error) => say(errorText(error?.code, lang));
 
-  const showOnMap = () => map()?.show(filterItems(data.items, tags));
+  const showOnMap = () => {
+    const shown = filterItems(data.items, tags);
+    map()?.show(shown);
+    map()?.showHex?.(hexBins(hexSize ? shown : [], hexSize));
+  };
 
   async function refresh() {
     try {
@@ -666,6 +694,29 @@ export function createLibraryPanel(me, lang, deps = {}) {
     profileId = null;
 
     panel.append(...legend());
+    panel.append(
+      el('div', { class: 'ox-menu-note', text: text.density }),
+      el(
+        'div',
+        { class: 'ox-tags' },
+        [0, ...HEX_SIZES_M].map((size) => {
+          const chip = el('button', {
+            type: 'button',
+            class: `ox-tag${size === hexSize ? ' on' : ''}`,
+            'aria-pressed': String(size === hexSize),
+            style: '--tag:#ff6b3d',
+            text: size ? text.densitySize(size) : text.densityOff,
+          });
+          chip.addEventListener('click', () => {
+            hexSize = size;
+            writeHex(size);
+            showOnMap();
+            draw();
+          });
+          return chip;
+        }),
+      ),
+    );
     if (form) {
       panel.append(newItemForm());
     } else {

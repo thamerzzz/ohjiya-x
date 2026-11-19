@@ -27,6 +27,7 @@ import {
   createAssistant,
 } from './assistant.js';
 import { cleanHash, createLibrary } from './library.js';
+import { createQuota } from './quota.js';
 import { createStore } from './store.js';
 import { TokenError, safeEqual, verifyToken } from './token.js';
 
@@ -99,6 +100,7 @@ export function createAuthHandler(
 ) {
   const entitlements = createEntitlementClient({ config, store, fetchImpl });
   const library = createLibrary(store.db);
+  const quota = createQuota(store.db, config.quotas);
   const assistant =
     deps.assistant ??
     createAssistant({
@@ -343,6 +345,8 @@ export function createAuthHandler(
     );
     if (recent.length >= ASSISTANT_PER_MINUTE)
       return json(res, 429, { error: 'slow_down' });
+    const spent = quota.take(companyId, 'assistant');
+    if (!spent.ok) return json(res, 429, { error: 'quota_exceeded', ...spent });
     asked.set(current.uid, [...recent, now]);
     const items = library.handle({
       method: 'GET',
@@ -377,6 +381,11 @@ export function createAuthHandler(
         error: verdict.error,
         ...(verdict.feature ? { feature: verdict.feature } : {}),
       });
+    if (rule.quota && Number.isInteger(doc.company?.id)) {
+      const spent = quota.take(doc.company.id, rule.quota);
+      if (!spent.ok)
+        return json(res, 429, { error: 'quota_exceeded', bucket: rule.quota });
+    }
     if (rule.forwarded) stripForwardingHeaders(req.headers);
     next();
   }
@@ -416,7 +425,7 @@ export function createAuthHandler(
       if (!res.headersSent) json(res, 500, { error: 'server_error' });
     }
   };
-  return { handler, store, entitlements };
+  return { handler, store, entitlements, quota };
 }
 
 export function ohjiyaAuthPlugin(config) {

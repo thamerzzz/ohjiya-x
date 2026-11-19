@@ -88,10 +88,10 @@ export const EDITIONS = Object.freeze({
       },
       {
         id: 'competitor-hex',
-        status: 'soon',
+        status: 'ready',
         label: {
-          en: 'Competitor density by shop type',
-          ar: 'كثافة المنافسين حسب نوع المتجر',
+          en: 'Competitor density map (Library, filter by type)',
+          ar: 'خريطة كثافة المنافسين (المكتبة، تصفية حسب النوع)',
         },
       },
       {

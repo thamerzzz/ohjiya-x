@@ -23,6 +23,8 @@ export function initMapBridge({ viewer }) {
   if (!viewer) return null;
   const source = new Cesium.CustomDataSource('ohjiya-library');
   const preview = new Cesium.CustomDataSource('ohjiya-library-preview');
+  const hexes = new Cesium.CustomDataSource('ohjiya-library-hex');
+  void viewer.dataSources.add(hexes);
   void viewer.dataSources.add(source);
   void viewer.dataSources.add(preview);
   let picking = null;
@@ -230,6 +232,28 @@ export function initMapBridge({ viewer }) {
     render();
   }
 
+  /** Density hexes: one polygon per cell, stronger fill for more items. */
+  function showHex({ cells, max }) {
+    hexes.entities.removeAll();
+    for (const cell of cells) {
+      const t = max > 1 ? (cell.count - 1) / (max - 1) : 1;
+      hexes.entities.add({
+        polygon: {
+          hierarchy: Cesium.Cartesian3.fromDegreesArray(
+            cell.corners.flatMap((p) => [p.lon, p.lat]),
+          ),
+          material: Cesium.Color.fromCssColorString('#ff6b3d').withAlpha(
+            0.18 + 0.5 * t,
+          ),
+          outline: false,
+          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+          classificationType: Cesium.ClassificationType.BOTH,
+        },
+      });
+    }
+    render();
+  }
+
   function flyTo({ lat, lon, altitude = 2500 }) {
     viewer.camera.flyTo({
       destination: Cesium.Cartesian3.fromDegrees(lon, lat, altitude),
@@ -248,11 +272,13 @@ export function initMapBridge({ viewer }) {
     cancel: () => picking?.cancel(),
     centre: () => world({ x: 0, y: 0, ...centreOf(viewer) }),
     show,
+    showHex,
     flyTo,
     destroy() {
       picking?.cancel();
       clearOverlaySource(OVERLAY_SOURCE);
       viewer.dataSources.remove(source, true);
+      viewer.dataSources.remove(hexes, true);
       viewer.dataSources.remove(preview, true);
       if (window.__oxMap === api) delete window.__oxMap;
     },

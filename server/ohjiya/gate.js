@@ -10,13 +10,38 @@
 
 const RULES = [
   { prefix: '/api/setup/', deny: true }, // Provider Settings is never reachable on the public site.
-  { prefix: '/api/realtime/', feature: 'voice', forwarded: true },
-  { prefix: '/api/gemini/', feature: 'voice', forwarded: true },
-  { prefix: '/api/openai/hud-summary', feature: 'chat', forwarded: true },
-  { prefix: '/api/google/nearby-places', paid: true, forwarded: true },
-  { prefix: '/api/google/text-search', paid: true, forwarded: true },
-  { prefix: '/api/mapillary/', paid: true, forwarded: true },
-  { prefix: '/api/tomtom', paid: true, forwarded: true },
+  {
+    prefix: '/api/realtime/',
+    feature: 'voice',
+    quota: 'voice',
+    forwarded: true,
+  },
+  { prefix: '/api/gemini/', feature: 'voice', quota: 'voice', forwarded: true },
+  {
+    prefix: '/api/openai/hud-summary',
+    feature: 'chat',
+    quota: 'chat',
+    forwarded: true,
+  },
+  {
+    prefix: '/api/google/nearby-places',
+    paid: true,
+    quota: 'places',
+    forwarded: true,
+  },
+  {
+    prefix: '/api/google/text-search',
+    paid: true,
+    quota: 'places',
+    forwarded: true,
+  },
+  {
+    prefix: '/api/mapillary/',
+    paid: true,
+    quota: 'mapillary',
+    forwarded: true,
+  },
+  { prefix: '/api/tomtom', paid: true, quota: 'tomtom', forwarded: true },
 ];
 
 /** The rule for a request path, or null when the route is open. */

@@ -6,6 +6,7 @@
  * server refuses to start: a half-configured sign-in must never fall back to
  * open access.
  */
+import { quotasFromEnv } from './quota.js';
 
 const MIN_SECRET = 32;
 const SECRETS = [
@@ -76,6 +77,7 @@ export function loadOhjiyaConfig(env = process.env) {
     sessionSecret: env.OHJIYA_SESSION_SECRET,
     assistantUrl,
     assistantKey: String(env.ATLAS_AI_KEY ?? ''),
+    quotas: quotasFromEnv(env),
     dbPath: env.OHJIYA_DB_PATH || '.gev-cache/ohjiya-auth.db',
     sessionTtlSeconds: 12 * 60 * 60,
     entitlementTtlMs: 10 * 60 * 1000,
