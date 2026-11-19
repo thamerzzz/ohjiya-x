@@ -532,3 +532,8 @@ body.ox-picking canvas {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
+
+#ox-account .ox-lens-menu .ox-tools button {
+  width: 100%;
+  padding: 6px 0;
+}

@@ -37,5 +37,19 @@ test('only an active plan gets its edition; the catalog is always public', () =>
   assert.equal(editionFor({ plan: { status: 'none' } }), null);
   assert.equal(editionFor({ plan: { status: 'active', edition: 'unknown' } }), null);
   assert.equal(editionCatalog().length, 3);
-  assert.equal(Object.keys(publicEdition('retail')).sort().join(), 'id,lens,name,tagline,tools');
+  assert.equal(Object.keys(publicEdition('retail')).sort().join(), 'id,lens,lenses,name,tagline,tools');
+});
+
+test('every named lens uses real layers, has both languages and keeps its layers in the link', () => {
+  for (const id of EDITION_IDS) {
+    const { lenses } = publicEdition(id);
+    assert.ok(lenses.length >= 5, `${id} has starter views`);
+    assert.equal(new Set(lenses.map((l) => l.id)).size, lenses.length);
+    for (const def of EDITIONS[id].lenses) {
+      assert.ok(def.label.en && def.label.ar, `${id}/${def.id} text`);
+      assert.ok(def.lens.layers.length > 0);
+      for (const layer of def.lens.layers) assert.ok(REGISTERED_LAYER_IDS.includes(layer), `${id}/${def.id}: ${layer}`);
+    }
+    for (const l of lenses) assert.match(l.path, /^\/#v=2&lat=/);
+  }
 });

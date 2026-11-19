@@ -11,6 +11,19 @@
 import { createView, viewUrl } from '../../src/view/index.js';
 
 const RIYADH = { lat: 24.7136, lon: 46.6753 };
+const JEDDAH = { lat: 21.5433, lon: 39.1728 };
+const DAMMAM = { lat: 26.4207, lon: 50.0888 };
+
+/** A named starter view: a camera, the layers to turn on, and a base map. */
+const lens = (id, en, ar, camera, layers) => ({
+  id,
+  label: { en, ar },
+  lens: {
+    camera: { heading_deg: 0, pitch_deg: -55, ...camera },
+    layers,
+    map: 'esri-imagery',
+  },
+});
 
 export const EDITIONS = Object.freeze({
   real_estate: {
@@ -25,6 +38,50 @@ export const EDITIONS = Object.freeze({
       layers: ['transit', 'street-level', 'bikeshare'],
       map: 'esri-imagery',
     },
+    lenses: [
+      lens(
+        'riyadh',
+        'Riyadh neighbourhoods',
+        'أحياء الرياض',
+        { ...RIYADH, altitude_m: 12000 },
+        ['transit', 'street-level', 'bikeshare'],
+      ),
+      lens(
+        'jeddah',
+        'Jeddah neighbourhoods',
+        'أحياء جدة',
+        { ...JEDDAH, altitude_m: 12000 },
+        ['transit', 'street-level', 'bikeshare'],
+      ),
+      lens(
+        'dammam',
+        'Dammam and Khobar',
+        'الدمام والخبر',
+        { ...DAMMAM, altitude_m: 14000 },
+        ['transit', 'street-level'],
+      ),
+      lens(
+        'liveability',
+        'Liveability: air, transit, bikes',
+        'جودة الحياة: الهواء والمواصلات والدراجات',
+        { ...RIYADH, altitude_m: 15000 },
+        ['air-quality', 'transit', 'bikeshare'],
+      ),
+      lens(
+        'change',
+        'What changed: recent imagery and streets',
+        'ما الذي تغيّر: صور حديثة وشوارع',
+        { ...RIYADH, altitude_m: 6000 },
+        ['recent-imagery', 'street-level'],
+      ),
+      lens(
+        'risk',
+        'Site risk: rain, storms, dams',
+        'مخاطر الموقع: الأمطار والعواصف والسدود',
+        { ...JEDDAH, altitude_m: 60000, pitch_deg: -70 },
+        ['weather-radar', 'weather-cyclones', 'local-dams'],
+      ),
+    ],
     tools: [
       {
         id: 'lens',
@@ -72,6 +129,50 @@ export const EDITIONS = Object.freeze({
       layers: ['traffic', 'transit'],
       map: 'esri-imagery',
     },
+    lenses: [
+      lens(
+        'riyadh',
+        'Riyadh customer movement',
+        'حركة العملاء في الرياض',
+        { ...RIYADH, altitude_m: 20000, pitch_deg: -60 },
+        ['traffic', 'transit'],
+      ),
+      lens(
+        'jeddah',
+        'Jeddah customer movement',
+        'حركة العملاء في جدة',
+        { ...JEDDAH, altitude_m: 20000, pitch_deg: -60 },
+        ['traffic', 'transit'],
+      ),
+      lens(
+        'dammam',
+        'Dammam and Khobar movement',
+        'حركة الدمام والخبر',
+        { ...DAMMAM, altitude_m: 20000, pitch_deg: -60 },
+        ['traffic', 'transit'],
+      ),
+      lens(
+        'storefront',
+        'Storefront check: streets and imagery',
+        'فحص الواجهات: الشوارع والصور',
+        { ...RIYADH, altitude_m: 3000 },
+        ['street-level', 'recent-imagery'],
+      ),
+      lens(
+        'delivery',
+        'Delivery conditions: traffic, rain, air',
+        'ظروف التوصيل: الازدحام والأمطار والهواء',
+        { ...RIYADH, altitude_m: 30000, pitch_deg: -60 },
+        ['traffic', 'weather-radar', 'air-quality'],
+      ),
+      lens(
+        'security',
+        'Site security: cameras and plate readers',
+        'أمن المواقع: الكاميرات وقارئات اللوحات',
+        { ...RIYADH, altitude_m: 8000 },
+        ['cctv', 'alpr-cameras'],
+      ),
+    ],
     tools: [
       {
         id: 'lens',
@@ -119,6 +220,50 @@ export const EDITIONS = Object.freeze({
       layers: ['telegeography-submarine-cables', 'local-datacenters'],
       map: 'esri-imagery',
     },
+    lenses: [
+      lens(
+        'cables',
+        'Subsea cables and data centres',
+        'الكابلات البحرية ومراكز البيانات',
+        { lat: 25.5, lon: 45.0, altitude_m: 4500000, pitch_deg: -90 },
+        ['telegeography-submarine-cables', 'local-datacenters'],
+      ),
+      lens(
+        'datacentres',
+        'Data centres near Riyadh',
+        'مراكز البيانات قرب الرياض',
+        { ...RIYADH, altitude_m: 60000, pitch_deg: -70 },
+        ['local-datacenters'],
+      ),
+      lens(
+        'landing',
+        'Cable landing: Jeddah and the Red Sea',
+        'هبوط الكابلات: جدة والبحر الأحمر',
+        { ...JEDDAH, altitude_m: 500000, pitch_deg: -80 },
+        ['telegeography-submarine-cables', 'ais-live-vessels'],
+      ),
+      lens(
+        'trade',
+        'Trade and logistics: flights and ships',
+        'التجارة والخدمات اللوجستية: الطيران والسفن',
+        { lat: 25.0, lon: 48.0, altitude_m: 2500000, pitch_deg: -90 },
+        ['flights', 'ais-live-vessels'],
+      ),
+      lens(
+        'signal',
+        'Signal health: radio and GNSS',
+        'سلامة الإشارة: الراديو والملاحة',
+        { lat: 25.5, lon: 45.0, altitude_m: 3000000, pitch_deg: -90 },
+        ['radio', 'gnss-integrity'],
+      ),
+      lens(
+        'space',
+        'Satellites overhead',
+        'الأقمار الاصطناعية فوقنا',
+        { lat: 25.5, lon: 45.0, altitude_m: 9000000, pitch_deg: -90 },
+        ['satellites'],
+      ),
+    ],
     tools: [
       {
         id: 'lens',
@@ -158,8 +303,11 @@ export const EDITION_IDS = Object.freeze(Object.keys(EDITIONS));
 /** The starter lens as a share link path, e.g. "/#v=2&lat=...". Built through the app's own view codec. */
 export function lensPath(edition) {
   const definition = EDITIONS[edition];
-  if (!definition) return null;
-  const url = viewUrl('https://lens.invalid/', createView(definition.lens));
+  return definition ? lensViewPath(definition.lens) : null;
+}
+
+function lensViewPath(view) {
+  const url = viewUrl('https://lens.invalid/', createView(view));
   return url.replace('https://lens.invalid', '');
 }
 
@@ -172,6 +320,11 @@ export function publicEdition(edition) {
     name: definition.name,
     tagline: definition.tagline,
     lens: lensPath(edition),
+    lenses: definition.lenses.map(({ id, label, lens: view }) => ({
+      id,
+      label,
+      path: lensViewPath(view),
+    })),
     tools: definition.tools.map(({ id, status, label }) => ({
       id,
       status,

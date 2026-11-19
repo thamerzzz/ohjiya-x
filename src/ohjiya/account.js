@@ -25,6 +25,7 @@ const TEXT = {
     editionsIntro: 'Sector editions, one plan each:',
     seePlans: 'See plans',
     lens: 'lens',
+    lenses: 'Starter views',
     ready: 'ready',
     soon: 'soon',
     yourEdition: 'Your edition',
@@ -43,6 +44,7 @@ const TEXT = {
     editionsIntro: 'إصدارات قطاعية، لكل منها اشتراك:',
     seePlans: 'عرض الاشتراكات',
     lens: 'عدسة',
+    lenses: 'عروض البداية',
     ready: 'جاهز',
     soon: 'قريبًا',
     yourEdition: 'إصدارك',
@@ -111,6 +113,21 @@ function togglePanel(button, panel) {
     panel.toggleAttribute('hidden', !open);
     button.setAttribute('aria-expanded', String(open));
   });
+}
+
+function lensPanel(me, lang, text) {
+  const items = (me.edition.lenses ?? []).map((lens) => {
+    const open = el('button', {
+      type: 'button',
+      text: lens.label[lang] ?? lens.label.en,
+    });
+    open.addEventListener('click', () => openLens(lens.path));
+    return el('li', {}, [open]);
+  });
+  return el('div', { class: 'ox-menu ox-lens-menu', hidden: '' }, [
+    el('div', { class: 'ox-menu-plan', text: text.lenses }),
+    el('ul', { class: 'ox-tools' }, items),
+  ]);
 }
 
 function editionPanel(me, lang, text) {
@@ -238,7 +255,13 @@ export function renderAccount(me, doc = document) {
       type: 'button',
       text: `${me.edition.name[lang] ?? me.edition.name.en} ${text.lens}`,
     });
-    lensButton.addEventListener('click', () => openLens(me.edition.lens));
+    const lenses = me.edition.lenses?.length ? lensPanel(me, lang, text) : null;
+    if (lenses) {
+      lensButton.setAttribute('aria-haspopup', 'true');
+      lensButton.setAttribute('aria-expanded', 'false');
+      togglePanel(lensButton, lenses);
+    } else
+      lensButton.addEventListener('click', () => openLens(me.edition.lens));
     const panel = editionPanel(me, lang, text);
     const infoButton = el('button', {
       class: 'ox-chip ox-info',
@@ -255,6 +278,7 @@ export function renderAccount(me, doc = document) {
       ...(assistant ? [assistant.button] : []),
       ...(library ? [library.button] : []),
       chip,
+      ...(lenses ? [lenses] : []),
       panel,
       ...(library ? [library.panel] : []),
       menu,
